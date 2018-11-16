@@ -6,6 +6,7 @@ import sys
 import math
 import datetime
 import image_analysis as im
+from edit_img import label_imgs
 
 
 def remove_back(folder, out_folder='/remove_back', back='white'):
@@ -118,36 +119,6 @@ def find_edge_imgs(imgs, Canny_min=5, Canny_max=50, Gaussian_sd=3, Closing = 5, 
     for i in range(imgs.shape[0]):
         imgs_edge[i, :, :], imgs_edge_merge[i, :, :] = find_edge_img(imgs[i, :, :], Canny_min=Canny_min, Canny_max=Canny_max, Gaussian_sd=Gaussian_sd, Closing=Closing, Closing_kernel=Closing_kernel)
     return imgs_edge, imgs_edge_merge
-
-
-def label_img(img_edge, img, connectivity=4, inversion=False):
-    # ラベリングする．白い部分がラベルされるよ！ラベルしたい部分が黒かったらinversionをTrueに．
-    # edge_imgがラベルする画像， imgの中央値か平均値を代入するよ
-    img_edge = img_edge.astype(np.uint8)
-    if inversion is True:
-        img_edge = 255 - img_edge
-    # ラベリングして，それぞれに平均値か中央値入れる！更に白黒に．
-    # つながっているところをラベリングしていく．connetorakkinnguctivity が4なら斜めも線．8なら斜めはすり抜ける．
-    # label に何箇所スペースがあったか． img_labelにラベリングされた画像, [始点x,y，長さx,y, 面積], その他
-    label, img_label, img_stats, other = cv2.connectedComponentsWithStats(img_edge, connectivity=connectivity)
-    result = np.zeros_like(img)
-    tmp = img_stats[:, 4] > 1
-    for i in range(1, label):
-        if tmp[i] == 1:
-            result[img_label==i] = np.median(img[img_label==i])
-    result8 = ((result / (np.max(result)) * 255).astype(np.uint8))
-    img_threshold = cv2.threshold(result8, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-    return img_threshold, result8
-
-
-def label_imgs(imgs_edge, imgs, connectivity=4, inversion=False):
-    # ラベリングする．白い部分がラベルされるよ！ラベルしたい部分が黒かったらinversionをTrueに．
-    # edge_imgがラベルする画像， imgの中央値か平均値を代入するよ
-    imgs_threshold = np.empty_like(imgs_edge)
-    imgs_result = np.empty_like(imgs)
-    for i in range(imgs.shape[0]):
-        imgs_threshold[i, :, :], imgs_result[i, :, :] = label_img(imgs_edge[i, :, :], imgs[i, :, :], connectivity=connectivity, inversion=inversion)
-    return imgs_threshold, imgs_result
 
 
 def find_frond_edge_img(img, Canny_min=5, Canny_max=30, sigmaColor=20, Closing = False, Closing_kernel=3):
