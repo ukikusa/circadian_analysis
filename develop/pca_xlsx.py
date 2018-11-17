@@ -88,7 +88,7 @@ def pca_xlsx(data_file, save_folder=os.path.join('pca'), sheet_name=0, index_col
         fc_p = fc_p.sort_values("loading_factor", ascending=False)
         fc_m = fc_i[fc_i['loading_factor'] < loading * -1]
         fc_m = fc_m.sort_values("loading_factor", ascending=True)
-        fc_p.to_excel(writer, sheet_name='PC' + str(i + 1) + 'plus', index=False, header=True)
+        fc_p.to_excel(writer, sheet_name='PC' + str(i + 1) + 'plus', index=False, header=True)  # 保存
         fc_m.to_excel(writer, sheet_name='PC' + str(i + 1) + 'minus', index=False, header=True)
     writer.save()
     print(np.max(fc_i))
