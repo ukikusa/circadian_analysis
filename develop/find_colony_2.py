@@ -36,7 +36,7 @@ def remove_back(folder, out_folder='/remove_back', back='white'):
         print('backgroundのスペル違うのでは')
         sys.exit()
     # imgをbackgroundを取り除いた画像に置き換える．
-    img_back = cv2.imread(folder + out_folder + '/background.tif', cv2.IMREAD_GRAYSCALE |cv2.IMREAD_ANYDEPTH)
+    img_back = cv2.imread(folder + out_folder + '/background.tif', cv2.IMREAD_GRAYSCALE | cv2.IMREAD_ANYDEPTH)
     if back == 'white':
         img_remove_back = - img + img_back
         img_remove_back[img > img_back] = np.min(img_remove_back)
@@ -54,7 +54,7 @@ def remove_back(folder, out_folder='/remove_back', back='white'):
     return img, img_remove_back
 
 
-def threshold(img, ave=5, sd_x=3, kernel=3):# , color=15, space=51):
+def threshold(img, ave=5, sd_x=3, kernel=3):  # , color=15, space=51):
     # 二値化の関数.
     # 画像をガウシアンで平滑化し，大津ので二値化し，ノイズや針消去のため，縮小拡大．
     # （img, ave=Gaussianの範囲, sd_x=Gaussianのx方向標準偏差, kernel=縮小拡大のピクセル数）
@@ -85,7 +85,7 @@ def threshold_imgs(imgs, ave=5, sd_x=1, kernel=5):
     return imgs_threshold
 
 
-def find_edge_img(img, Canny_min=5, Canny_max=30, Gaussian_sd=3, Closing = False, Closing_kernel=3):
+def find_edge_img(img, Canny_min=5, Canny_max=30, Gaussian_sd=3, Closing=False, Closing_kernel=3):
     # Canny法で輪郭抽出． Closingは回数． GaussianとClosingはFalseで処理なし． Closing_kernelはClosingの広さ
     # 次の処理のために8bit画像を作成
     if np.max(img) > 255 or np.min(img) >= 10:
@@ -112,7 +112,7 @@ def find_edge_img(img, Canny_min=5, Canny_max=30, Gaussian_sd=3, Closing = False
     return edge, img_edge_merge
 
 
-def find_edge_imgs(imgs, Canny_min=5, Canny_max=50, Gaussian_sd=3, Closing = 5, Closing_kernel=5):
+def find_edge_imgs(imgs, Canny_min=5, Canny_max=50, Gaussian_sd=3, Closing=5, Closing_kernel=5):
     # find_edge_img を実行．
     imgs_edge = np.empty_like(imgs)
     imgs_edge_merge = np.empty_like(imgs)
@@ -121,7 +121,7 @@ def find_edge_imgs(imgs, Canny_min=5, Canny_max=50, Gaussian_sd=3, Closing = 5, 
     return imgs_edge, imgs_edge_merge
 
 
-def find_frond_edge_img(img, Canny_min=5, Canny_max=30, sigmaColor=20, Closing = False, Closing_kernel=3):
+def find_frond_edge_img(img, Canny_min=5, Canny_max=30, sigmaColor=20, Closing=False, Closing_kernel=3):
     # Canny法で輪郭抽出． Closingは回数． GaussianとClosingはFalseで処理なし． Closing_kernelはClosingの広さ
     # 次の処理のために8bit画像を作成
     # 返り値は2つ．ひとつ目はエッジだけの情報．ふたつ目はマージした情報．
@@ -153,7 +153,7 @@ def find_frond_edge_img(img, Canny_min=5, Canny_max=30, sigmaColor=20, Closing =
     return edge, img_edge_merge
 
 
-def find_frond_edge_imgs(imgs, Canny_min=5, Canny_max=50, sigmaColor=20, Closing = 5, Closing_kernel=5):
+def find_frond_edge_imgs(imgs, Canny_min=5, Canny_max=50, sigmaColor=20, Closing=5, Closing_kernel=5):
     # find_edge_img を実行．
     imgs_edge = np.empty_like(imgs)
     imgs_edge_merge = np.empty_like(imgs)
@@ -184,7 +184,7 @@ def frond_label_img(img_edge, img, connectivity=4, inversion=False, min_frond_st
     for i in range(1, label):
         if tmp[i] == 1 and np.median(img[img_label == i]) != 0:
             if color_tmp[i] == 1:
-                hue = math.floor(180/color_label_square) * hue_number
+                hue = math.floor(180 / color_label_square) * hue_number
                 label_color[img_label == i, :] = [hue, 180, 180]
                 hue_number += 1
                 print(hue)
@@ -273,11 +273,10 @@ if second is True:
     # imgs = 65535 - imgs
     # imgs = im.read_imgs(folder_im.read_imgs)
     # imgs_edge, imgs_edge_merge = find_edge_imgs(imgs, Canny_min=5, Canny_max=30, Gaussian_sd=3, Closing=1, Closing_kernel=5)        cv2.imwrite(save_folder + '/' + str(i).zfill(3) + '.tif', img[i, :, :])
-    imgs_edge_merge = im.read_imgs(folder + '/170330/edge_merg    for i in range(imgs.shape[0]):e' + str(time-1))
+    imgs_edge_merge = im.read_imgs(folder + '/170330/edge_merg    for i in range(imgs.shape[0]):e' + str(time - 1))
     imgs_edge = np.zeros_like(imgs_edge_merge)
     imgs_edge[imgs_edge_merge == 255] = 255
     result = label_imgs(imgs_edge, imgs_remove_back, connectivity=4, inversion=True)
-
 
     # result = find_edge_imgs(imgs)
     # print(cv2.connectedComponentsWithStats(imgs_edge[0]))
@@ -306,20 +305,20 @@ if third is True:
         # 隙間を埋める膨張，縮小処理のカーネルを指定．　これは前の処理いますでしたのと同じ値にしたほうがいい気がする．
         Closing_kernel = 5
         kernel = np.ones((Closing_kernel, Closing_kernel), np.uint8)
-        Closing=3
+        Closing = 3
         for j in range(Closing):
             img_duckweed = cv2.dilate(img_duckweed, kernel)
             img_duckweed = cv2.erode(img_duckweed, kernel)
         # 最後に，縮小，膨張処理しておこう．意味は？知らん！！
-        kernel_one = np.ones((1,1), np.uint8)
+        kernel_one = np.ones((1, 1), np.uint8)
         img_duckweed = cv2.erode(img_duckweed, kernel_one)
         img_duckweed = cv2.dilate(img_duckweed, kernel_one)
         # これで，二値化画像の代入
         imgs_duckweed_return[i, :, :] = img_duckweed
         print(i)
     # 全ての画像に対して，マージを行う．
-    imgs_duckweed_merge[imgs_duckweed_return!=0] = imgs[imgs_duckweed_return!=0]
-    im.save_imgs(save_imgs_duckweed,imgs_duckweed_return)
+    imgs_duckweed_merge[imgs_duckweed_return != 0] = imgs[imgs_duckweed_return != 0]
+    im.save_imgs(save_imgs_duckweed, imgs_duckweed_return)
     im.save_imgs(save_imgs_merge, imgs_duckweed_merge)
 
 
@@ -345,7 +344,7 @@ if forth is True:
         imgs8 = imgs.astype(np.uint8)
     imgs8[imgs_edge == 255] = 255
     im.save_imgs(im.save_imgs_edge, imgs8)
-    im.save_imgs(im.save_imgs_label,  imgs_label_color)
+    im.save_imgs(im.save_imgs_label, imgs_label_color)
 
 
 five = True
@@ -365,7 +364,7 @@ if five is True:
 
     # 以下フォルダの設定，画像の読み込み．
 
-    imgs_edge_merge = im.read_imgs(folder + day + '/frond_edge' + str(time-1))
+    imgs_edge_merge = im.read_imgs(folder + day + '/frond_edge' + str(time - 1))
     imgs_duckweed = im.read_imgs(folder + day + '/duckweed_merge')
     # エッジ情報だけを抽出．
     imgs_edge = np.zeros_like(imgs_edge_merge)
@@ -381,8 +380,7 @@ if five is True:
         imgs8 = imgs.astype(np.uint8)
     imgs8[imgs_edge == 255] = 255
     im.save_imgs(im.save_imgs_edge, imgs8)
-    im.save_imgs(im.save_imgs_label,  imgs_label_color)
-
+    im.save_imgs(im.save_imgs_label, imgs_label_color)
 
 
 # これ以下，店の追跡
@@ -409,15 +407,15 @@ if six is True:
         img_label_sort = np.zeros_like(img_label)
         # img_label_sort[range(1,label)]
         for j in range(1, label):
-            img_label_sort[img_label==j] = index[j-1]+1
+            img_label_sort[img_label == j] = index[j - 1] + 1
         # それぞれのlabelだけで整形する．
         # 拡大縮小とかで輪郭きれたら嫌だなぁ．
         # 最後のラベルでｘを代入する．
         x = 100
         for j in range(1, label):
             img_tmp = np.zeros_like(img_label)
-            if np.sum(img_label_sort==j) != 0:
-                img_tmp[img_label_sort==j] = 255
+            if np.sum(img_label_sort == j) != 0:
+                img_tmp[img_label_sort == j] = 255
                 # 細かい線を消すための拡大縮小．
                 img_tmp = img_tmp.astype(np.uint8)
                 kernel_one = np.ones((2, 2), np.uint8)
@@ -430,7 +428,7 @@ if six is True:
                 if label != 1:
                     img_tmp2[i_l_t >= 2] = 255
                 # ここまでで，フロンド抽出完了．これをx番目のフロンドとする．
-                img_label_sort[img_tmp2==255] = x
+                img_label_sort[img_tmp2 == 255] = x
                 x += 1
         imgs[i, :, :] = img_label_sort
     imgs[imgs < 100] = 0
@@ -465,7 +463,7 @@ if six is True:
             distance = []  # j番目のフロンドに対する次の画像のk番目のフロンドの距離を格納する．
             for k in range(centroids2.shape[0]):
                 # フロンド間の距離を計算する
-                distance.append(np.linalg.norm(centroids[j]-centroids2[k]))
+                distance.append(np.linalg.norm(centroids[j] - centroids2[k]))
             # j番目の位置にj番目のフロンドに対して距離が一番短いフロンドのインデックスを格納，そして距離を収納．
             min_index.append(distance.index(min(distance)))
             min_distance.append(min(distance))
@@ -482,7 +480,7 @@ if six is True:
             while not((img_label == label_number).any()):
                 label_number += 1  # 前の画像にlabel_numberなフロンドがなかったらlabel_number増やす．
                 print(label_number)
-            same_flond = np.where(min_index==min_index[j])[0]  # ひとつのフロンドを複数のフロンドで取り合っていないか．
+            same_flond = np.where(min_index == min_index[j])[0]  # ひとつのフロンドを複数のフロンドで取り合っていないか．
             print(min_distance[same_flond])
             print(min_distance[j] == min(min_distance[same_flond]))
             if min_distance[j] == min(min_distance[same_flond]):  # 取り合ってたら，距離が短い場合だけ次の処理をする．
@@ -490,7 +488,7 @@ if six is True:
 
                 img_label_sort[img_label2 == min_index[j] + 1] = label_number
                 centroids_sort.append([centroids2[min_index[j]]])
-        imgs_result[i,:,:] = img_label_sort
+        imgs_result[i, :, :] = img_label_sort
     imgs_color_result = make_color_imgs(imgs_result, 10)
     test_folder = folder + day + '/test2'
     labeled_folder = folder + '/labeled_img'

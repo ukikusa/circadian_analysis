@@ -15,10 +15,10 @@ def skeletonize_folder(folder, save_folder):
     imgs_[imgs != 0] = 1  # 二値化が必須
     kernel = np.ones((3, 3))
     for i in range(imgs.shape[0]):
-        tmp = morphology.dilation(imgs_[i], kernel)-imgs_[i]
+        tmp = morphology.dilation(imgs_[i], kernel) - imgs_[i]
         skeletonize = morphology.skeletonize(tmp).astype(np.uint8)
         print(skeletonize.shape)
-        skeletonize = skeletonize+255
+        skeletonize = skeletonize + 255
         label_n, label_img = cv2.connectedComponents(skeletonize, connectivity=4)
         print(label_n)
         for j in range(1, label_n):

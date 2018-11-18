@@ -70,10 +70,10 @@ def frond_plt(r, number, area, lum_sum, pdf_save):
     return r, number
 
 
-def frond_r_2fig(r, number, col, pdf_save, dT=60, offset=0):
+def frond_r_2fig(r, number, col, pdf_save, dt=60, offset=0):
     # dataの取り込み,タブ区切りなら拡張子をtsv．　delimiter='\t'でできる気がする試してない
     # 時間の定義
-    time = np.arange(data.shape[0], dtype=float) * dT / 60 + offset
+    time = np.arange(data.shape[0], dtype=float) * dt / 60 + offset
     # if avg is not False:
     #    time_move = time[int(avg / 2): data.shape[0] - int(avg / 2)]
     # else:
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         frond_folder = day + '/frond'
         data_file = '/small_phase_mesh1_avg3.npy'
         r, number, col = [], [], []
-        dT = 60
+        dt = 60
         for i in sorted(glob.glob(frond_folder + '/*')):
             print(i)
             # 解析データのフォルダ
@@ -147,8 +147,8 @@ if __name__ == '__main__':
         r[number < 1000] = np.nan
         number[number < 1000] = np.nan
         pdf_save = os.path.join(day)
-        frond_r_2fig(r, number, col, pdf_save, dT, offset=0)
-    # np.savetxt('/hdd1/kenya/Labo/keisan/python/2017_06_13LDtoLL/phase.csv', result, fmt = '%.4f%+.4fj, '*512, delimiter=",")
+        frond_r_2fig(r, number, col, pdf_save, dt, offset=0)
+    # np.savetxt('/hdd1/kenya/Labo/keisan/python/2017_06_13LdtoLL/phase.csv', result, fmt = '%.4f%+.4fj, '*512, delimiter=",")
         # pdf一ページに対して，配置するグラフの数．配置するグラフの場所を指定．
         # plt.subplot(4, 3, np.mod(i, 12)+1)
         # vplt.title(i)

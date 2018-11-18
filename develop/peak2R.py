@@ -46,12 +46,12 @@ def r_plt(x, r, pdf_save):
     return 0
 
 
-def peak2r(peak_folder, save_folder, pdf=False, dT=60, n=200):
+def peak2r(peak_folder, save_folder, pdf=False, dt=60, n=200):
     peak_data = pd.read_csv(peak_folder, dtype=np.float64, index_col=False)  # 読み込み
     peak = np.array(peak_data.values)  # numpyに
     if os.path.exists(save_folder) is False:
         os.makedirs(save_folder)
-    time = np.arange(n)*dT/60
+    time = np.arange(n) * dt / 60
     phase = np.empty((len(time), peak.shape[1]))
     for i in range(peak.shape[1]):
         phase[:, i], period = pa.make_phase(peak[:, i], time=time)
@@ -68,8 +68,8 @@ if __name__ == '__main__':
     peak_folder = 'tmp/peak.csv'
     # ファイルを指定
     save_folder = 'tmp/R_result'
-    dT = 60  # データの時間間隔を指定(分)
+    dt = 60  # データの時間間隔を指定(分)
     n = 180  # どれだけの回数取ったか（20分おきで24時間なら72）
 
-    peak2r(peak_folder, save_folder, dT=dT, n=n)
+    peak2r(peak_folder, save_folder, dt=dt, n=n)
     # この関数で全部実行

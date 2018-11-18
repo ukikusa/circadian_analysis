@@ -14,7 +14,7 @@ from label2folder import label2frond
 if __name__ == '__main__':
     os.chdir(os.path.join('/hdd1', 'kenya', 'Labo', 'keisan', 'python', '00data'))
     folder = "160721_LLtoLL_CCA1_MVX/data_light"
-    dT = 30
+    dt = 30
     if 0:
         light_img = im.read_imgs(folder)
         light_img8 = im.bit1628(light_img)
@@ -33,13 +33,13 @@ if __name__ == '__main__':
         im.save_imgs('160721_LLtoLL_CCA1_MVX/frond_lum', frond_lum)
 
     if 0:
-        dT = 30
-        color, imgs_phase = img_to_mesh_phase('160721_LLtoLL_CCA1_MVX/frond_lum', avg=3, mesh=1, dT=dT, peak_avg=3, p_range=24, fit_range=7, save_folder='color')
+        dt = 30
+        color, imgs_phase = img_to_mesh_phase('160721_LLtoLL_CCA1_MVX/frond_lum', avg=3, mesh=1, dt=dt, peak_avg=3, p_range=24, fit_range=7, save_folder='color')
     ##################################################################
     ################### ここからUBQの前処理 ##########################
     ##################################################################
     folder = "160728_UBQ/data_light"
-    dT = 30
+    dt = 30
     if 0:
         # 背景除去
         light_img = im.read_imgs(folder)

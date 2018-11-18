@@ -35,7 +35,7 @@ if __name__ == '__main__':
         lum_img = im.read_imgs(i + '/frond_lum')
         calc_img, mask_lum_img, lum_img, warps = transform.imgs_transform(calc_img, mask_lum_img, lum_img)
         np.save(i + '/warps.npy', warps)
-        warps.resize((2*(calc_img.shape[0]-1), 3))
+        warps.resize((2 * (calc_img.shape[0] - 1), 3))
         np.savetxt(i + '/warps.csv', warps, delimiter=',')
         im.save_imgs(i + '/moved_mask_frond', calc_img)
         im.save_imgs(i + '/moved_mask_frond_lum', mask_lum_img)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
         # 解析データのフォルダ
         data_folder = i + '/moved_mask_frond_lum'
         save_folder = i
-        color, imgs_phase = make_phase_img.img_to_mesh_phase(data_folder, avg=1, mesh=1, dT=60, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder)
+        color, imgs_phase = make_phase_img.img_to_mesh_phase(data_folder, avg=1, mesh=1, dt=60, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder)
 
     data_file = '/phase_mesh1_avg1.npy'
     for i in glob.glob(frond_folder + '/*'):
@@ -60,6 +60,6 @@ if __name__ == '__main__':
         # 解析データのフォルダ
         data = np.load(i + data_file)
         save_folder = day + '/result/R/' + (data_file.lstrip('/')).rstrip('.npy') + str('_') + i.split('/')[-1]
-        if os.path.exists(day+'/result/R') is False:
+        if os.path.exists(day + '/result/R') is False:
             os.makedirs(day + '/result/R')
         phase2R.phase2R_plt(data, area, save_folder)

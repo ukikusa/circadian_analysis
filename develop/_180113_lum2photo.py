@@ -18,13 +18,13 @@ def lum2photon(data, dark=0):
 # pandasを用いてCSVファイルからデータを取り込み，ピークを出力するvar
 
 
-def img2photon(folder, dark=0, dT=60, offset=0, save=True):
+def img2photon(folder, dark=0, dt=60, offset=0, save=True):
     print(folder)
     folder_list = sorted(os.listdir(folder))
     day = os.path.split(folder)[0]
     today = datetime.datetime.today().strftime("%Y-%m-%d")
     img_number = len(glob.glob(os.path.join(folder, folder_list[0], 'mask_frond_lum', '*.tif')))
-    time_list = np.linspace(0, (img_number - 1) * dT / 60, img_number, dtype=np.float64) + offset
+    time_list = np.linspace(0, (img_number - 1) * dt / 60, img_number, dtype=np.float64) + offset
     frond_lum = np.empty((img_number, len(folder_list)), dtype=np.uint32)
     frond_area = np.empty((img_number, len(folder_list)), dtype=np.uint16)
     frond_avg = np.empty_like(frond_area)
@@ -53,27 +53,27 @@ if __name__ == '__main__':
     # os.chdir(os.path.join("/Users", "kenya", "keisan", "python", "00data"))
     os.chdir(os.path.join("/hdd1", "kenya", "Labo", "keisan", "python", "00data"))
     days = "./170829-LL2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 0
     dark = 1563.0
     frond_folder = os.path.join(days, "frond")
-    img2photon(frond_folder, dT=dT, offset=offset, dark=dark, save=True)
+    img2photon(frond_folder, dt=dt, offset=offset, dark=dark, save=True)
 
     #############################################
     days = "./170613-LD2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 1.5
     dark = 1565.8
     frond_folder = os.path.join(days, "frond")
-    img2photon(frond_folder, dT=dT, offset=offset, dark=dark, save=True)
+    img2photon(frond_folder, dt=dt, offset=offset, dark=dark, save=True)
 
     #############################################
     days = "./170215-LL2LL-MVX"
-    dT = 60 + 10 / 60
+    dt = 60 + 10 / 60
     offset = 0
     dark = 1578.3
     frond_folder = os.path.join(days, "frond")
-    img2photon(frond_folder, dT=dT, offset=offset, dark=dark, save=True)
+    img2photon(frond_folder, dt=dt, offset=offset, dark=dark, save=True)
 
     sys.exit()
     ############################################
@@ -85,28 +85,28 @@ if __name__ == '__main__':
     loc = "out right"
 
     days = "./170829-LL2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 0
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0, loc=loc)
     #############################################
     days = "./170613-LD2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 1.5
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0, loc=loc)
     #############################################
     days = "./170215-LL2LL-MVX"
-    dT = 60 + 10 / 60
+    dt = 60 + 10 / 60
     offset = 0
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0, loc=loc)
 
     ############################################
     ################# 面積 #####################
@@ -117,28 +117,28 @@ if __name__ == '__main__':
     loc = "out right"
 
     days = "./170829-LL2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 0
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0, loc=loc)
     #############################################
     days = "./170613-LD2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 1.5
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0, loc=loc)
     #############################################
     days = "./170215-LL2LL-MVX"
-    dT = 60 + 10 / 60
+    dt = 60 + 10 / 60
     offset = 0
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0, loc=loc)
 
     ############################################
     ################# 面積 #####################
@@ -149,28 +149,28 @@ if __name__ == '__main__':
     ymax = 6000
 
     days = "./170829-LL2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 0
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0)
+    csv2fig(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0)
     #############################################
     days = "./170613-LD2LL-ito-MVX"
-    dT = 60
+    dt = 60
     offset = 1.5
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0)
+    csv2fig(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0)
     #############################################
     days = "./170215-LL2LL-MVX"
-    dT = 60 + 10 / 60
+    dt = 60 + 10 / 60
     offset = 0
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0)
+    csv2fig(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0)
 
     ################################################
     ################# 総発光量 #####################

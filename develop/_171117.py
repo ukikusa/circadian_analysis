@@ -30,7 +30,7 @@ if __name__ == '__main__':
                 os.makedirs(save_folder)
             name = np.array([x, y, pixel_linalg])
             name = np.array(name)
-            data_AmpNorm = AmpNorm(datas, w=24, dT=dT, save_folder=save_folder, pdf=False, name=name)
+            data_AmpNorm = AmpNorm(datas, w=24, dt=dt, save_folder=save_folder, pdf=False, name=name)
             data_cut = cut_time_data(datas, x, s_point=10, e_point=50)
 
             # for_fft = np.arange(0, 24*3 + int(out.shape[0]/24-5)*24, 24)

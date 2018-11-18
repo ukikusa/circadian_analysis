@@ -35,5 +35,5 @@ if 0:
 
 if __name__ == '__main__':
     os.chdir(os.path.join('/hdd1', 'kenya', 'Labo', 'keisan', 'MVX', '160715'))
-    dT = 30
-    color, imgs_phase = img_to_mesh_phase('frond_lum', avg=3, mesh=1, dT=dT, peak_avg=3, p_range=24, fit_range=7, save_folder='color')
+    dt = 30
+    color, imgs_phase = img_to_mesh_phase('frond_lum', avg=3, mesh=1, dt=dt, peak_avg=3, p_range=24, fit_range=7, save_folder='color')

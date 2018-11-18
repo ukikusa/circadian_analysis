@@ -22,8 +22,8 @@ if __name__ == '__main__':
     # day = './170613-LD2LL-ito-MVX'
     day = './170215-LL2LL-MVX'
 
-    # dT = 60
-    dT = 60 + 10 / 60  # よくわからないずれ分
+    # dt = 60
+    dt = 60 + 10 / 60  # よくわからないずれ分
 
     offset = 0
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         label2frond(label_folder, frond_folder, lum_folder)
 
         # flondの発光量，面積，平均を求める．
-        frond_folder2data(frond_folder, time=dT, offset=offset, save=True)
+        frond_folder2data(frond_folder, time=dt, offset=offset, save=True)
 
         # 回転
         print('フロンド毎のデータを出したよ')
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         # 解析データのフォルダ
         data_folder = i + '/small_moved_mask_frond_lum/'
         save_folder = i
-        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dT=dT, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
+        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dt=dt, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
 
     # 同期率求める
     data_file = 'small_phase_mesh1_avg3.npy'
@@ -119,8 +119,8 @@ if __name__ == '__main__':
     # day = './170613-LD2LL-ito-MVX'
     # day = './170215-LL2LL-MVX'
 
-    dT = 60
-    # dT = 60 + 10 / 60  # よくわからないずれ分
+    dt = 60
+    # dt = 60 + 10 / 60  # よくわからないずれ分
 
     offset = 0
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
         label2frond(label_folder, frond_folder, lum_folder)
 
         # flondの発光量，面積，平均を求める．
-        frond_folder2data(frond_folder, time=dT, offset=offset, save=True)
+        frond_folder2data(frond_folder, time=dt, offset=offset, save=True)
 
     # 回転
     for i in sorted(glob.glob(frond_folder + '/*')):
@@ -189,7 +189,7 @@ if __name__ == '__main__':
         # 解析データのフォルダ
         data_folder = i + '/small_moved_mask_frond_lum/'
         save_folder = i
-        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dT=dT, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
+        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dt=dt, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
 
     # 同期率求める
     data_file = 'small_phase_mesh1_avg3.npy'
@@ -215,8 +215,8 @@ if __name__ == '__main__':
     day = './170613-LD2LL-ito-MVX'
     # day = './170215-LL2LL-MVX'
 
-    dT = 60
-    # dT = 60 + 10 / 60  # よくわからないずれ分
+    dt = 60
+    # dt = 60 + 10 / 60  # よくわからないずれ分
 
     offset = 1.5
 
@@ -230,7 +230,7 @@ if __name__ == '__main__':
         label2frond(label_folder, frond_folder, lum_folder)
 
         # flondの発光量，面積，平均を求める．
-        frond_folder2data(frond_folder, time=dT, offset=offset, save=True)
+        frond_folder2data(frond_folder, time=dt, offset=offset, save=True)
 
     # 回転
     for i in sorted(glob.glob(frond_folder + '/*')):
@@ -285,7 +285,7 @@ if __name__ == '__main__':
         # 解析データのフォルダ
         data_folder = i + '/small_moved_mask_frond_lum/'
         save_folder = i
-        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dT=dT, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
+        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dt=dt, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
 
     # 同期率求める
     data_file = 'small_phase_mesh1_avg3.npy'

@@ -80,7 +80,7 @@ def label2frond(folder, out_folder, lum_folder=False, size=160, label_name=False
             if label_name is False:
                 save_folder = os.path.join(out_folder, 'label-' + str(i).zfill(3) + '_n' + str(img_number))
             else:
-                save_folder = os.path.join(out_folder, 'label-' + str(i).zfill(2) + '_frond-' + label_name[i-1] + '_n' + str(img_number))
+                save_folder = os.path.join(out_folder, 'label-' + str(i).zfill(2) + '_frond-' + label_name[i - 1] + '_n' + str(img_number))
             img_numbers.append(img_number)
             frond_names.append('label-' + str(i).zfill(2))
             im.save_imgs(os.path.join(save_folder, 'frond'), img)

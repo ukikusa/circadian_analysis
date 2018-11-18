@@ -70,7 +70,7 @@ def frond_plt(r, number, area, lum_sum, pdf_save):
     return r, number
 
 
-def frond_r_2fig(file, pdf_save, avg, dT, ymax, offset=0, loc="upper left"):
+def frond_r_2fig(file, pdf_save, avg, dt, ymax, offset=0, loc="upper left"):
     # dataの取り込み,タブ区切りなら拡張子をtsv．　delimiter='\t'でできる気がする試してない．
     dataframe = pd.read_csv(file, dtype=float, index_col=0)
     data = np.array(dataframe.values)
@@ -78,7 +78,7 @@ def frond_r_2fig(file, pdf_save, avg, dT, ymax, offset=0, loc="upper left"):
         data = data / np.power(10, int(np.log10(ymax)) - 4)
         ymax = ymax / np.power(10, int(np.log10(ymax)) - 4)
     # 時間の定義
-    time = np.arange(data.shape[0], dtype=float) * dT / 60 + offset
+    time = np.arange(data.shape[0], dtype=float) * dt / 60 + offset
     if avg is not False:
         time_move = time[int(avg / 2): data.shape[0] - int(avg / 2)]
     else:

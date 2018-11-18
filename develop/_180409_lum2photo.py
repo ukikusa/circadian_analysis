@@ -23,11 +23,11 @@ if __name__ == '__main__':
     # os.chdir(os.path.join("/Users", "kenya", "keisan", "python", "00data"))
     os.chdir(os.path.join("/hdd1", "kenya", "Labo", "keisan", "python", "00data"))
     days = "./160728_UBQ"
-    dT = 30
+    dt = 30
     offset = 0
     dark = 5196
     frond_folder = os.path.join(days, "frond")
-    img2photon(frond_folder, dT=dT, offset=offset, dark=dark, save=True)
+    img2photon(frond_folder, dt=dt, offset=offset, dark=dark, save=True)
 
     ############################################
     ################ 総発光量 ##################
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=0, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=0, loc=loc)
 
     ############################################
     ################# 面積 #####################
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=offset, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=offset, loc=loc)
 
     ############################################
     ################# 平均 #####################
@@ -66,18 +66,18 @@ if __name__ == '__main__':
     ymax = 40
     loc = "out right"
 
-    dT = 60
+    dt = 60
     offset = 0
     data_folder = os.path.join(days, "result")
     pdf_save = os.path.join(data_folder, "pdf", "all_" + os.path.splitext(data_file)[0])
     print(pdf_save)
-    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dT=dT, ymax=ymax, offset=offset, loc=loc)
+    csv2fig_all(os.path.join(data_folder, data_file), pdf_save, avg=avg, dt=dt, ymax=ymax, offset=offset, loc=loc)
 
     ################# peak_move #############
     ###############################
     day = './170728-UBQ'
 
-    dT = 30
+    dt = 30
 
     # label_folder = os.path.join(day, "edit_raw", "label_img")
     # lum_folder = os.path.join(day, "edit_raw", "lum_min_img")
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     #     label2frond(label_folder, frond_folder, lum_folder)
 
     # flondの発光量，面積，平均を求める．
-    #      frond_folder2data(frond_folder, time=dT, offset=offset, save=True)
+    #      frond_folder2data(frond_folder, time=dt, offset=offset, save=True)
 
     # 回転
     for i in sorted(glob.glob(frond_folder + '/*')):
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         # 解析データのフォルダ
         data_folder = i + '/small_moved_mask_frond_lum/'
         save_folder = i
-        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dT=dT, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
+        color, imgs_phase = img_to_mesh_phase(data_folder, avg=3, mesh=1, dt=dt, peak_avg=3, p_range=12, fit_range=5, save_folder=save_folder, pdf_save=save_folder)
 
     # 同期率求める
     data_file = 'small_phase_mesh1_avg3.npy'

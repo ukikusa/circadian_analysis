@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-from PIL import Image  # Pillowの方を入れる．PILとは共存しない
-import cv2
 import glob
-import sys
+import itertools
 import os
+import sys
+
+from PIL import Image  # Pillowの方を入れる．PILとは共存しない
+
+import numpy as np
+import cv2
 
 
 def read_imgs(img_folder, color=False, extension='tif'):  # 画像入っているフォルダ
@@ -13,9 +16,9 @@ def read_imgs(img_folder, color=False, extension='tif'):  # 画像入ってい�
     if len(file_list) == 0:
         print(img_folder + '/*.' + extension + 'がありません')
         sys.exit()
-    if color == False:  # グレースケール読むとき
+    if color is False:  # グレースケール読むとき
         imread_type = cv2.IMREAD_GRAYSCALE | cv2.IMREAD_ANYDEPTH
-    elif color == True:  # カラー読むとき
+    elif color is True:  # カラー読むとき
         imread_type = cv2.IMREAD_COLOR
     tmp = cv2.imread(file_list[0], imread_type)  # 1枚目
     img = np.empty(np.concatenate(([len(file_list)], tmp.shape)), dtype=tmp.dtype)  # 箱
@@ -85,8 +88,9 @@ def make_colors(img, glay=-2, black=-1):
 
 
 def mesh_img(folder, mesh=5):
+    """Make the image mash by taking the average in the vicinity."""
     # 画像のフォルダから画像を全部読み込んできて，全てメッシュ化してしまおう！
-    img = im.read_imgs(folder)
+    img = read_imgs(folder)
     # 以下メッシュ化するよ！
     meshed = np.empty((img.shape[0], int(img.shape[1] / mesh), int(img.shape[2] / mesh)))
     for i, j in itertools.product(np.arange(int(img.shape[1] / mesh)), np.arange(int(img.shape[2] / mesh))):

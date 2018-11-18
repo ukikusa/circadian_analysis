@@ -11,7 +11,7 @@ import peak_analysis as pa
 from image_analysis import make_color
 
 
-def make_frond_phase_imgs(imgs, label_imgs, avg, dT=60, peak_avg=3, p_range=6, fit_range=4, csv_save=False, pdf_save=False):
+def make_frond_phase_imgs(imgs, label_imgs, avg, dt=60, peak_avg=3, p_range=6, fit_range=4, csv_save=False, pdf_save=False):
     if os.path.exists(pdf_save) is False:
         os.mkdir(pdf_save)
         print(pdf_save + 'フォルダを作成しました')
@@ -24,7 +24,7 @@ def make_frond_phase_imgs(imgs, label_imgs, avg, dT=60, peak_avg=3, p_range=6, f
         for j, k in enumerate(label):
             data[i, j] = np.average(img[label_img == k])
     phase_data = np.ones(data.shape, dtype=np.float64) * -1
-    time = np.arange(imgs.shape[0], dtype=float) * dT / 60
+    time = np.arange(imgs.shape[0], dtype=float) * dt / 60
     time_move = time[int(avg / 2): imgs.shape[0] - int(avg / 2)]
     # それぞれのデータに名前をつけるときように，一応データ名を取り込めるようにしておく．pandaを使った方がいいかも．
     # header = np.loadtxt('data.csv', dtype='U15', delimiter=',')
@@ -91,7 +91,7 @@ def mesh_img(folder, mesh=5):
     return meshed
 
 
-def img_to_frond_phase(folder, label_folder, avg, mesh=3, dT=60, peak_avg=3, p_range=12, fit_range=5, save=True, csv_save=False, pdf_save=False):
+def img_to_frond_phase(folder, label_folder, avg, mesh=3, dt=60, peak_avg=3, p_range=12, fit_range=5, save=True, csv_save=False, pdf_save=False):
     # 上の全部まとめたった！！
     # メッシュ化
     if mesh == 1:
@@ -101,7 +101,7 @@ def img_to_frond_phase(folder, label_folder, avg, mesh=3, dT=60, peak_avg=3, p_r
         data = mesh_img(folder, mesh)
         label_img = im.read_imgs(label_folder)
     # 解析をする．
-    imgs_phase = make_frond_phase_imgs(imgs=data, label_imgs=label_img, avg=avg, dT=dT, peak_avg=peak_avg, p_range=p_range, fit_range=fit_range, csv_save=csv_save, pdf_save=pdf_save)
+    imgs_phase = make_frond_phase_imgs(imgs=data, label_imgs=label_img, avg=avg, dt=dt, peak_avg=peak_avg, p_range=p_range, fit_range=fit_range, csv_save=csv_save, pdf_save=pdf_save)
     imgs_phase[np.logical_and(label_img != 0, imgs_phase == -1)] = -2
     color_phase = np.empty((imgs_phase.shape[0], imgs_phase.shape[1], imgs_phase.shape[2], 3))
     for i in range(imgs_phase.shape[0]):
@@ -124,10 +124,10 @@ if __name__ == '__main__':
     label_file = os.path.join('edit_raw', 'label_img')
 
     day = os.path.join('.', '170215-LL2LL-MVX')
-    # dT = 60
-    dT = 60 + 10 / 60
+    # dt = 60
+    dt = 60 + 10 / 60
     # 解析データのフォルダ
     data_folder = os.path.join(day, data_file)  # 発光画像
     label_folder = os.path.join(day, label_file)  # ラベル(使わないところは0)
     # 出力先フォルダ
-    color, imgs_phase = img_to_frond_phase(data_folder, label_folder, avg=3, mesh=1, dT=60, peak_avg=3, p_range=12, fit_range=5, csv_save=day + 'frond_peak_csv', pdf_save=day + '/pdf')
+    color, imgs_phase = img_to_frond_phase(data_folder, label_folder, avg=3, mesh=1, dt=60, peak_avg=3, p_range=12, fit_range=5, csv_save=day + 'frond_peak_csv', pdf_save=day + '/pdf')
