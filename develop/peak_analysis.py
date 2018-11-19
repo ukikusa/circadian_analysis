@@ -6,9 +6,6 @@ import numpy as np
 from scipy import signal
 
 
-# 下２行は，リモートで操作している場合
-
-
 def moving_avg(data, avg=2):
     """A function for obtaining moving average."""
     a = np.ones(avg) / avg
@@ -71,8 +68,22 @@ def make_phase(peak_time, n=False, dt=60, time=False):
     return phase, period
 
 
-def phase_analysis(data, avg, dt=60, p_range=6, f_range=4, offset=0, time=False, peak_v_range=0):
-    # peak時間，値，Phase，フィッティングのr2値，フィッティングに使ったインデックス(移動平均取ったあと)．
+def phase_analysis(data, avg, dt=60, p_range=6, f_range=4, offset=0, time=False):
+    """データ群に対して二次関数フィッティングを行い，位相等のデータを出力する.
+
+    Args:
+        data: {np.array. dim 2} 発光量のデータ．i列をi個目の時系列だと認識．
+        avg: {int} 移動平均を取るデータ数．奇数が望ましい．
+        dt: {int} minute. 時間軸作成のため (default: {60})
+        p_range: {int} 前後それぞれp_rangeよりも値が高い点をピークとみなす. (default: {6})
+        f_range: {int} 前後それぞれf_rangeのデータを用いて推定をする. (default: {4})
+        offset: {int} (default: {0})
+        time: {list or np.array} 時間軸．dt, offsetと共存しない． (default: {False})
+
+    Returns:
+        [[peak時間]，[Peakの値]，[Phase list]，[r2]，[p_rangeによりpeakのindex(移動平均後)]
+        [np.arrayの入ったリスト]
+    """
     if time is False:
         time = np.arange(data.shape[0], dtype=np.float64) * dt / 60 + offset
     ###############

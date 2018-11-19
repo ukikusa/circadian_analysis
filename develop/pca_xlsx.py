@@ -1,31 +1,48 @@
 # coding: utf-8
 """PCA."""
-
-import pandas as pd  # pip3 install xlrd xlwt
 import os
 import sys
+
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+
 import numpy as np
+
+import pandas as pd  # pip3 install xlrd xlwt
+
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
 
-def pca_xlsx(data_file, save_folder=os.path.join('pca'), sheet_name=0, index_col=0, header=0, threshold=10, scale=True, loading=0.9, c=True):
-    """Pca."""
+def pca_xlsx(data_file, str_use='.*', sheet_name=0, index_col=0, header=0, threshold=10, scale=True, loading=0.9, c=True):
+    """Pca.
+
+    Args:
+        data_file: FileのPath．重複は不可．
+        str_use: 特定の文字列を含む列のみ，使用．正規表現 (default: {'.*.'})
+        sheet_name: 取り込みシートを指定(0始まり)． (default: {0})
+        index_col: 因子名がある列を指定(0始まり)． (default: {0})
+        header: サンプル名の行を指定(0始まり)． (default: {0})
+        threshold: 発現量 (default: {10})
+        scale: 基本はTrue (default: {True})
+        loading: 保存する因子負荷量 (default: {0.9})
+        c: {list} 色付けしたければ0-1のリストを． (default: {True})
+    """
     #############################
     # データの取り込み
     #############################
     root, ext = os.path.splitext(data_file)  # 拡張子とそれ以外に分ける．
+    save_path = root + "_" + str_use.replace(".", "").replace("*", "")
     if ext == '.csv':
         data = pd.read_csv(data_file, index_col=index_col, header=header)
     elif ext == '.xlsx':
         data = pd.read_excel(data_file, sheet_name=sheet_name, index_col=index_col, header=header)
     else:
         sys.exit('csvファイルかxlsxを使ってください')
-    if os.path.exists(root) is False:
-        os.makedirs(root)
-    print(root + 'に保存します．')
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+    print(save_path + 'に保存します．')
+    data = data.loc[:, data.columns.str.match(str_use)]
     ###############################
     # PCA
     ###############################
@@ -39,13 +56,14 @@ def pca_xlsx(data_file, save_folder=os.path.join('pca'), sheet_name=0, index_col
     pca_r = pca.fit(dat)  # 主成分分析の実行
     # print(np.max(dat_cut.values))
     pca_point = pca.transform(dat)  # PCA結果をplotしたもの．
+    n = pca_r.n_components_  # めっちゃ使うので．
     ###############################
     # PCA結果をプロット
     ###############################
     if c is True:
-        c = np.linspace(0, 1, pca_r.n_components_)
+        c = np.linspace(0, 1, n)
 
-    def mk_fig(pca_point, n=pca_r.n_components_, save_pdf=os.path.join(root, 'pca.pdf'), x=0, c=c, cmap='jet', fontsize=4):
+    def mk_fig(pca_point, n=n, save_pdf=os.path.join(save_path, 'pca.pdf'), x=0, c=c, cmap='jet', fontsize=4):
         pp = PdfPages(save_pdf)
         pc_i = ['PC' + str(i + 1) for i in range(n)]
         fig = plt.figure(figsize=(9, 7), dpi=100)
@@ -66,23 +84,23 @@ def pca_xlsx(data_file, save_folder=os.path.join('pca'), sheet_name=0, index_col
             plt.clf()
         pp.close()
 
-    mk_fig(pca_point, n=pca_r.n_components_, save_pdf=os.path.join(root, 'pca.pdf'), x=0, c=c, cmap='jet', fontsize=4)
-    mk_fig(pca_point, n=pca_r.n_components_, save_pdf=os.path.join(root, 'pca_big_font.pdf'), x=0, c=c, cmap='jet', fontsize=9)
-    mk_fig(pca_point, n=pca_r.n_components_, save_pdf=os.path.join(root, 'pca_2.pdf'), x='list', c=c, cmap='jet', fontsize=9)
+    mk_fig(pca_point, n=n, save_pdf=os.path.join(save_path, 'pca.pdf'), x=0, c=c, cmap='jet', fontsize=4)
+    mk_fig(pca_point, n=n, save_pdf=os.path.join(save_path, 'pca_big_font.pdf'), x=0, c=c, cmap='jet', fontsize=9)
+    mk_fig(pca_point, n=n, save_pdf=os.path.join(save_path, 'pca_2.pdf'), x='list', c=c, cmap='jet', fontsize=9)
 
     ################################
     # 因子寄与率をプロット
     fig = plt.figure(figsize=(6, 6), dpi=100)
     ax = plt.axes()
-    pc_i = ['PC' + str(i + 1) for i in range(pca_r.n_components_)]
-    ax.bar(range(pca_r.n_components_), pca_r.explained_variance_ratio_, tick_label=pc_i, align="center")
-    plt.savefig(os.path.join(root, 'importance.pdf'))
+    pc_i = ['PC' + str(i + 1) for i in range(n)]
+    ax.bar(range(n), pca_r.explained_variance_ratio_, tick_label=pc_i, align="center")
+    plt.savefig(os.path.join(save_path, 'importance.pdf'))
     plt.close()
     ###############################
     # 負荷量
-    fc = pca.components_ * np.c_[np.sqrt(pca.explained_variance_ * (pca_r.n_components_ - 1) / pca_r.n_components_)]  # 計算
-    writer = pd.ExcelWriter(os.path.join(root, "loading_factor.xlsx"))
-    for i in range(pca_r.n_components_):
+    fc = pca.components_ * np.c_[np.sqrt(pca.explained_variance_ * (n - 1) / n)]  # 計算
+    writer = pd.ExcelWriter(os.path.join(save_path, "loading_factor.xlsx"))
+    for i in range(n):
         fc_i = pd.DataFrame({"Transcript_ID": data_cut.index, "loading_factor": fc[i]})
         fc_p = fc_i[fc_i['loading_factor'] > loading]
         fc_p = fc_p.sort_values("loading_factor", ascending=False)
