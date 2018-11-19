@@ -71,14 +71,14 @@ def pca_xlsx(data_file, str_use='.*', sheet_name=0, index_col=0, header=0, thres
             x = [0] * n
         else:
             x = range(n)
-        for i in range(pca_r.n_components_ - 1):
+        for i in range(n - 1):
             ax = plt.axes([0.1, 0.1, 0.9, 0.8])
             pc_i.append('PC' + str(i + 2))
             sc = ax.scatter(pca_point[:, x[i]], pca_point[:, i + 1], c=c, cmap='jet')
             for l, x_, y_ in zip(data.columns, pca_point[:, x[i]], pca_point[:, i + 1]):
                 ax.annotate(l, (x_, y_), fontsize=fontsize)
             ax.set_xlabel(pc_i[x[i]], fontsize=9)
-            ax.set_ylabel(pc_i[i], fontsize=9)
+            ax.set_ylabel(pc_i[i + 1], fontsize=9)
             plt.colorbar(sc, aspect=100, shrink=1)
             plt.savefig(pp, format='pdf')
             plt.clf()
@@ -109,4 +109,3 @@ def pca_xlsx(data_file, str_use='.*', sheet_name=0, index_col=0, header=0, thres
         fc_p.to_excel(writer, sheet_name='PC' + str(i + 1) + 'plus', index=False, header=True)  # 保存
         fc_m.to_excel(writer, sheet_name='PC' + str(i + 1) + 'minus', index=False, header=True)
     writer.save()
-    print(np.max(fc_i))
