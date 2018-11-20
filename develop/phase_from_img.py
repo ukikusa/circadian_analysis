@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Phase from image and fig."""
+"""A function that analyzes a time series image group for each pixel."""
 
-import glob
 import os
 import sys
 
@@ -12,87 +11,103 @@ import numpy as np
 import pandas as pd
 
 import peak_analysis as pa
-# from _171020_make_period_img import make_period_imgs
 
 
-def make_phase_imgs(imgs, avg, dt=60, p_range=13, f_range=9, csv_save=False, offset=0):
+def make_theta_imgs(imgs, avg=3, dt=60, p_range=13, f_avg=1, f_range=9, offset=0):
     """A function that obtains the peak for each pixel from the time series image by quadratic function fitting."""
     if avg % 2 - 1:
         sys.exit('avgは移動平均を取るデータ数です．奇数で指定してください．\n 他は前後 *_rangeに対して行っています')
-    phase_imgs = np.empty(imgs.shape, dtype=np.float64)  # 位相の出力画像を設定．
-    phase_imgs[:] = np.nan
-    period_imgs = np.copy(phase_imgs)  # 周期の出力画像を設定．
     time = np.arange(imgs.shape[0], dtype=np.float64) * dt / 60 + offset  # 時間データを作成．
     use_xy = np.where(np.sum(imgs, axis=0) != 0)  # データの存在する場所のインデックスをとってくる．
-    label = use_xy[0].astype(str).astype(object) + ',' + use_xy[1].astype(str).astype(object)
-    print(imgs.shape)
-    print(imgs[:, use_xy[0], use_xy[1]].shape)
-    # ここでピーク抽出やグラフ作成を終わらす
-    peak_a = pa.phase_analysis(imgs[:, use_xy[0], use_xy[1]], avg=avg, dt=dt, p_range=p_range, f_range=f_range, time=time)
-    peak_time = pd.DataFrame(peak_a[0], columns=label)
-    r2 = pd.DataFrame(peak_a[3], columns=label)
-    phase_imgs[:, use_xy[0], use_xy[1]] = peak_a[2]
-    period_imgs[:, use_xy[0], use_xy[1]] = peak_a[6]
-    return phase_imgs, period_imgs, r2, peak_a[4], peak_a[5], use_xy, peak_time
+    # 解析
+    peak_a = pa.phase_analysis(imgs[:, use_xy[0], use_xy[1]], avg=avg, p_range=p_range, f_avg=f_avg, f_range=f_range, time=time)
+    ###############################
+    # 出力
+    ###############################
+    index = ["x", "y"]
+    index.extend(range(peak_a[0].shape[0]))
+    p_time = pd.DataFrame(np.vstack((use_xy, peak_a[0])), index=index)
+    r2 = pd.DataFrame(np.vstack((use_xy, peak_a[3])), index=index)
+    theta_imgs = np.empty(imgs.shape, dtype=np.float64)
+    theta_imgs[:] = np.nan
+    tau_imgs = np.copy(theta_imgs)
+    peak_a[2][np.isnan(peak_a[2])] = -1
+    peak_a[6][np.isnan(peak_a[6])] = -1
+    theta_imgs[:, use_xy[0], use_xy[1]] = peak_a[2]
+    tau_imgs[:, use_xy[0], use_xy[1]] = peak_a[6]
+    return theta_imgs, tau_imgs, r2, peak_a[4], peak_a[5], p_time
 
 
-def img_to_mesh_phase(folder, avg, mesh=1, dt=60, offset=0, p_range=12, f_range=5, save_imgs=False, make_color=[22, 28], save_pdf=False, save_xlsx=False):
+def img_pixel_theta(folder, avg=3, mesh=1, dt=60, offset=0, p_range=12, f_avg=1, f_range=5, save=False, make_color=[22, 28], pdf=False, xlsx=False):
+    """ピクセルごとに二次関数フィッティングにより解析する．
+    
+    位相・周期・Peak時刻，推定の精度 を出力する．
+    
+    Args:
+        folder: 画像群が入ったフォルダを指定する．
+        avg: ピーク位置を推定するときに使う移動平均 (default: {3})
+        mesh: 解析前にメッシュ可する範囲 (default: {1} しない)
+        dt: Minite (default: {60})
+        offset: hour (default: {0})
+        p_range: 前後それぞれp_rangeよりも値が高い点をピークとみなす (default: {12})
+        f_avg: [description] (default: {1})
+        f_range: 前後それぞれf_rangeのデータを用いて推定をする (default: {5})
+        save: 保存先のフォルダ名．Trueなら自動で名付け． (default: {False})
+        make_color: 周期を色付けする範囲 (default: {[22, 28]})
+        pdf: PDFを保存するか否か (default: {False})
+        xlsx: エクセルを保存するか否か (default: {False})
+    
+    Returns:
+        保存のみの関数．返り値は持たさない(0)．
+    """
     # 上の全部まとめたった！！
     if mesh == 1:
         imgs = im.read_imgs(folder)
     else:
         imgs = im.mesh_img(folder, mesh)
     # 生物発光の画像群から位相を求める
-    peak_a = make_phase_imgs(imgs, avg=avg, dt=dt, p_range=p_range, f_range=f_range, offset=offset)
-    imgs_phase = peak_a[0]
+    peak_a = make_theta_imgs(imgs, avg=avg, dt=dt, p_range=p_range, f_avg=f_avg, f_range=f_range, offset=offset)
     # 位相のデータは醜いので，カラーのデータを返す．
-    color_phase = im.make_colors(imgs_phase)
-    imgs_period = (peak_a[1] - make_color[0]) / (make_color[1] - make_color[0]) * 0.8
-    nan = ~np.isnan(imgs_period)
-    imgs_period[nan][imgs_period[nan] > 0.8] = 0.8
-    imgs_period[nan][imgs_period[nan] < 0] = 0
-    color_period = im.make_colors(imgs_period)
-    if save_imgs is not False:
+    tau_frond = peak_a[1] == -1
+    color_theta = im.make_colors(peak_a[0], grey=-1)
+    imgs_tau = (peak_a[1] - make_color[0]) / (make_color[1] - make_color[0]) * 0.8
+    nan = ~np.isnan(imgs_tau)
+    imgs_tau[nan][imgs_tau[nan] > 0.8] = 0.8
+    imgs_tau[nan][imgs_tau[nan] < 0] = 0
+    imgs_tau[tau_frond] = -1
+    color_tau = im.make_colors(imgs_tau, grey=-1)
+    if save is not False:
         # color 画像の保存
-        im.save_imgs(os.path.join(save_folder, 'phase' + '_mesh' + str(mesh) + '_avg' + str(avg)), color_phase)
-        im.save_imgs(os.path.join(save_folder, 'period' + '_mesh' + str(mesh) + '_avg' + str(avg)), color_period)
+        if save is True:
+            save = os.path.split(folder)[0]
+            save = os.path.join(save, '_'.join(['tau_mesh-' + str(mesh), 'avg-' + str(avg), 'prange-' + str(p_range), 'frange-' + str(f_range)]))
+        im.save_imgs(os.path.join(save, 'theta'), color_theta)
+        im.save_imgs(os.path.join(save, 'tau'), color_tau)
         # phaseを0−1で表したものをcsvファイルに
-        np.save(save_folder + '/small_phase' + '_mesh' + str(mesh) + '_avg' + str(avg) + '.npy', imgs_phase)
-        np.save(os.path.join(save_folder, 'small_period' + '_mesh' + str(mesh) + '_avg' + str(avg) + '.npy'), imgs_period)
-    if save_pdf is not False:
-        x = np.linalg.norm(np.asarray(
-            peak_a[5]) - 80, axis=0).repeat(np.asarray(peak_a[2]).shape[0])
-        y = np.asarray(peak_a[2]).reshape(len(x), order='F')
-        x, y = x[~np.isnan(y)], y[~np.isnan(y)]
-        max_x, max_y = 45, 1
-        make_hst_fig(save_file=save_pdf, x=x, y=y, max_x=max_x,
-                     max_y=max_y, max_hist=500, bin_hist=100)
-    return color_phase, imgs_phase, peak_a[2]
-
-
-# dataはdata,avgで移動平均．前後p_range分より高い点を暫定ピークに．その時の移動平均がpeak_avg．fit_rangeでフィッティング
+        np.save(os.path.join(save, 'theta.npy'), peak_a[0])
+        np.save(os.path.join(save, 'tau.npy'), imgs_tau)
+        # if pdf is not False:
+        #     x = np.linalg.norm(np.asarray(
+        #         peak_a[5]) - 80, axis=0).repeat(np.asarray(peak_a[2]).shape[0])
+        #     y = np.asarray(peak_a[2]).reshape(len(x), order='F')
+        #     x, y = x[~np.isnan(y)], y[~np.isnan(y)]
+        #     max_x, max_y = 45, 1
+        #     make_hst_fig(save_file=pdf, x=x, y=y, max_x=max_x,
+        #                  max_y=max_y, max_hist=500, bin_hist=100)
+        if xlsx is not False:
+            writer = pd.ExcelWriter(os.path.join(save, "peak_list.xlsx"))
+            peak_a[2].to_excel(writer, sheet_name='r2', index=True, header=False)  # 保存
+            peak_a[5].to_excel(writer, sheet_name='peak_time', index=False, header=True)
+            writer.save()
+    return 0
 
 if __name__ == "__main__":
-    os.chdir(os.path.join('/hdd1', 'Users', 'kenya', 'Labo', 'keisan',
-                          'python', '00data'))  # カレントディレクトリの移動．ググって．ないしは，下のフォルダ指定で絶対パス指定をする．
+    os.chdir(os.path.join('/hdd1', 'Users', 'kenya', 'Labo', 'keisan', 'python'))
+    # カレントディレクトリの変更．
+    #########################
+    # パラメータ
+    #########################
+    folder = os.path.join('00data', '170613-LD2LL-ito-MVX', 'frond_180730', 'label-001_239-188_n214', 'small_moved_mask_frond_lum')
+    save = os.path.join('_181120', 'test')
 
-    # 解析データのフォルダ
-    data_folder = os.path.join(
-        '.', 'small_moved_mask_frond_lum')  # 助長かも．データのあるフォルダを指定して．
-    save_folder = '.'
-    out = img_to_mesh_phase(data_folder, avg=3, mesh=1, dt=60, peak_avg=3, p_range=12, f_range=5, save_folder=save_folder, pdf_save=os.path.join(save_folder, 'tmp.pdf'))
-
-    sys.exit('正常に終了')
-    ################
-    # roop回したければ以下の通り
-    ####################
-    days = ['./170215-LL2LL-MVX',
-            './170613-LD2LL-ito-MVX', './170829-LL2LL-ito-MVX']
-    for day in days:
-        frond_folder = day + '/frond'
-        for i in sorted(glob.glob(frond_folder + '/*')):
-            print(i)
-            # 解析データのフォルダ
-            data_folder = i + '/small_moved_mask_frond_lum/'
-            save_folder = i
-            out = img_to_mesh_phase(data_folder, avg=3, mesh=1, dt=60, peak_avg=3, p_range=13, f_range=5, save_folder=save_folder, pdf_save=os.path.join(save_folder, 'tmp.pdf'))
+    img_pixel_theta(folder, avg=3, mesh=1, dt=60, offset=0, p_range=12, f_avg=1, f_range=5, save=save, make_color=[22, 28], xlsx=True)

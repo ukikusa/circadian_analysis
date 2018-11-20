@@ -1,4 +1,5 @@
-# utf-8
+# -*- coding: utf-8 -*-
+"""Function group for frond imgs."""
 
 import numpy as np
 import os
@@ -11,11 +12,15 @@ import peak_analysis as pa
 from image_analysis import make_color
 
 
-def make_frond_phase_imgs(imgs, label_imgs, avg, dt=60, peak_avg=3, p_range=6, fit_range=4, csv_save=False, pdf_save=False):
-    if os.path.exists(pdf_save) is False:
-        os.mkdir(pdf_save)
-        print(pdf_save + 'フォルダを作成しました')
-    label = np.unique(label_imgs[np.nonzero(label_imgs)])
+def make_frond_phase_imgs(imgs, label_imgs=False, avg=3, dt=60, f_avg=3, p_range=6, f_range=4, csv=False, pdf=False):
+    if os.path.exists(pdf) is False:
+        os.mkdir(pdf)
+    if label_imgs is False:
+        label_imgs == np.zeros_like(imgs)
+        label_imgs[np.nonzero(imgs)] == 1
+        label = [1]
+    else:
+        label = np.unique(label_imgs[np.nonzero(label_imgs)])
     data = np.zeros((imgs.shape[0], label.shape[0]), dtype=np.float64)
     phase_imgs = np.ones(imgs.shape, dtype=np.float64) * -1
     for i in range(label_imgs.shape[0]):
@@ -37,12 +42,12 @@ def make_frond_phase_imgs(imgs, label_imgs, avg, dt=60, peak_avg=3, p_range=6, f
     # それぞれの時系列に対して処理を回す．ここでピーク抽出やグラフ作成を終わらす．
     # print(use_index)
     for i in range(data.shape[1]):
-        if pdf_save is not False:
+        if pdf is not False:
             # pdf一ページに対して，配置するグラフの数．配置するグラフの場所を指定．
             plt.subplot(4, 3, np.mod(i, 12) + 1)
             # peakを推定する．func_valueで計算．
-        peak_time_tmp, peak_value_tmp, func_value_tmp, peak_point, pcov = pa.peak_find(data[:, i], time=time_move, avg=avg, peak_avg=peak_avg, p_range=p_range, fit_range=fit_range, pdf_save=pdf_save)
-        if pdf_save is not False:
+        peak_time_tmp, peak_value_tmp, func_value_tmp, peak_point, pcov = pa.peak_find(data[:, i], time=time_move, avg=avg, peak_avg=p_avg, p_range=p_range, f_range=f_range, pdf_save=pdf)
+        if pdf is not False:
             plt.title(i)
             # x軸の調整
             plt.xlabel('time')
@@ -53,26 +58,26 @@ def make_frond_phase_imgs(imgs, label_imgs, avg, dt=60, peak_avg=3, p_range=6, f
                 # レイアウト崩れを自動で直してもらう
                 plt.tight_layout()
                 # 保存
-                plt.savefig(pdf_save + '/' + str(i) + '.pdf')
+                plt.savefig(pdf + '/' + str(i) + '.pdf')
                 plt.close()
             # peak_time.append(peak_time_tmp)
             # peak_value.append(peak_value_tmp)
         peak_time[0:len(peak_time_tmp), i] = peak_time_tmp
         phase_data[:, i] = phase_fit(peak_time_tmp, data.shape[0])
     else:
-        if pdf_save is not False:
+        if pdf is not False:
             plt.title(i)
             plt.xlabel('time')
             plt.xticks(np.arange(time[0], time[-1], 24) - time[0])
             plt.rcParams['font.size'] = 6
             plt.tight_layout()
-            plt.savefig(pdf_save + '/' + str(i) + '.pdf')
+            plt.savefig(pdf + '/' + str(i) + '.pdf')
             plt.close()
         # print(peak_time_tmp)
         peak_time[peak_time == 0] = np.nan
-        if csv_save is not False:
-            np.savetxt(csv_save, peak_time, delimiter=',')
-            np.savetxt(csv_save + 'data.csv', data, delimiter=',')
+        if csv is not False:
+            np.savetxt(csv, peak_time, delimiter=',')
+            np.savetxt(csv + 'data.csv', data, delimiter=',')
         phase_data = np.array(phase_data, dtype=np.float)
     for i in range(data.shape[0]):
         for j, k in enumerate(label):
@@ -106,7 +111,7 @@ def img_to_frond_phase(folder, label_folder, avg, mesh=3, dt=60, peak_avg=3, p_r
     color_phase = np.empty((imgs_phase.shape[0], imgs_phase.shape[1], imgs_phase.shape[2], 3))
     for i in range(imgs_phase.shape[0]):
         color_phase[i] = make_color(imgs_phase[i, ::, ::], glay=True)
-    if save == True:
+    if save is True:
         # color 画像の保存
         # imgs_merge = mesh_img(day + '/frond_170627224290/', mesh=mesh)
         im.save_imgs(folder.rstrip('/') + '_mesh' + str(mesh) + '_avg' + str(avg) + 'phase_color_merged', color_phase)
@@ -130,4 +135,4 @@ if __name__ == '__main__':
     data_folder = os.path.join(day, data_file)  # 発光画像
     label_folder = os.path.join(day, label_file)  # ラベル(使わないところは0)
     # 出力先フォルダ
-    color, imgs_phase = img_to_frond_phase(data_folder, label_folder, avg=3, mesh=1, dt=60, peak_avg=3, p_range=12, fit_range=5, csv_save=day + 'frond_peak_csv', pdf_save=day + '/pdf')
+    color, imgs_phase = img_to_frond_phase(data_folder, label_folder, avg=3, mesh=1, dt=60, p_avg=3, p_range=12, f_range=5, csv=day + 'frond_peak_csv', pdf=day + '/pdf')

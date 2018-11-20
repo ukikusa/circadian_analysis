@@ -81,7 +81,7 @@ def pca_xlsx(data_file, str_use='.*', sheet_name=0, index_col=0, header=0, thres
             ax.set_ylabel(pc_i[i + 1], fontsize=9)
             plt.colorbar(sc, aspect=100, shrink=1)
             plt.savefig(pp, format='pdf')
-            plt.clf()
+            plt.clf(fig)
         pp.close()
 
     mk_fig(pca_point, n=n, save_pdf=os.path.join(save_path, 'pca.pdf'), x=0, c=c, cmap='jet', fontsize=4)
