@@ -72,7 +72,7 @@ def multi_plot(x, y, save_path, peak=False, func=False, r=False, label=False, y_
     pp.close()
 
 
-def make_hst_fig(save_file, x, y, min_x=0, max_x=None, min_y=0, max_y=None, max_hist_x=None, max_hist_y=None, bin_hist_x=100, bin_hist_y=100, xticks=False, yticks=False, xticklabels=[], yticklabels=[], pdfpages=False, avg=False, xlabel='', ylabel='', box=False, per=True):
+def make_hst_fig(save_file, x, y, min_x=0, max_x=None, min_y=0, max_y=None, max_hist_x=None, max_hist_y=None, bin_hist_x=100, bin_hist_y=100, xticks=False, yticks=False, xticklabels=[], yticklabels=[], pdfpages=False, avg=False, xlabel='', ylabel='', box=False, per=True, title=False):
     """Create a graph with histogram.  You can also find correlation coefficients or plot box plots."""
     # Min_x-max_y:散布図の範囲．max_hist:度数分布の最大値，bin:度数分布の分割.
     x, y = x.astype(np.float64), y.astype(np.float64)
@@ -86,6 +86,7 @@ def make_hst_fig(save_file, x, y, min_x=0, max_x=None, min_y=0, max_y=None, max_
     space = 0.01
     hst_height = 0.2
     ####################################################
+    # if pdfpages is False:
     fig = plt.figure(1, figsize=(6, 4), dpi=100)
     ax = plt.axes([sc_bottom, sc_left, sc_width, sc_height])
     xy = np.vstack([x, y])
@@ -155,6 +156,8 @@ def make_hst_fig(save_file, x, y, min_x=0, max_x=None, min_y=0, max_y=None, max_
     ax_x.set_xlim(ax.get_xlim())
     ax_x.set_xticklabels([])
     ax_x.hist(x, bins=bin_hist_x, histtype='stepfilled', range=ax.get_xlim())
+    if title is not False:
+        plt.title(title, loc='right', fontsize=6)
     ax_y = plt.axes([sc_left + sc_width + space,
                      sc_bottom, hst_height, sc_width])
     ax_y.set_ylim(ax.get_ylim())
@@ -163,7 +166,7 @@ def make_hst_fig(save_file, x, y, min_x=0, max_x=None, min_y=0, max_y=None, max_
     ax_y.hist(y, bins=bin_hist_y, histtype='stepfilled',
               range=ax.get_ylim(), orientation='horizontal')
     if pdfpages is False:
-        fig.savefig(save_file)
+        plt.savefig(save_file)
         plt.close()
     else:
         plt.savefig(pdfpages, format='pdf')

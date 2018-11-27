@@ -15,7 +15,7 @@ def moving_avg(data, avg=2):
     return avg_data
 
 
-def peak_find(data, p_tmp, avg=1, f_range=9, time=False):
+def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0.7):
     """二次関数フィッティングを行う．
 
     Args:
@@ -59,13 +59,13 @@ def peak_find(data, p_tmp, avg=1, f_range=9, time=False):
         r2[count] = (1 - fit[1] / np.var(data[i_f: i_e], ddof=f_range * 2))
     peak_t = -func[:, 1] * 0.5 / func[:, 0]  # peak時間
     peak_v = func[:, 2] - pow(func[:, 1], 2) * 0.25 / func[:, 0]  # peak時の値
-    j = np.where(func[:, 0] < 0, 1, 0) * np.where(peak_t < time[p_tmp + f_range], 1, 0) * np.where(time[p_tmp - f_range] > 0, 1, 0)
+    j = np.where(func[:, 0] < 0, 1, 0) * np.where(peak_t < time[p_tmp + f_range], 1, 0) * np.where(time[p_tmp - f_range] > 0, 1, 0) * np.where(r2 >= r2_cut, 1, 0)
     return peak_t[j == 1], peak_v[j == 1], func[j == 1], r2[j == 1], p_tmp[j == 1]
 
 
-def make_phase(peak_time, n=168, dt=60, time=False):
+def make_phase(peak_time, n=168, dt=60, time=False, r2=False, r2_cut=False):
     """A function that creates a list of phases from the peak list.
-    
+
     Args:
         peak_time: peak時間 (hour)
         n: 出力するデータ数 (default: {168})
@@ -77,7 +77,10 @@ def make_phase(peak_time, n=168, dt=60, time=False):
         [np.array. 位相は0-1.]
     """
     peak_time = np.array(peak_time)
-    peak_time = peak_time[~np.isnan(peak_time)]
+    no_nan = ~np.isnan(peak_time)
+    peak_time = peak_time[no_nan]
+    if r2_cut is not False:
+        peak_time = peak_time[r2[no_nan] >= r2_cut]
     if time is False:
         time = np.arange(n) * dt / 60
     phase = np.empty(len(time), dtype=np.float64)
@@ -92,7 +95,7 @@ def make_phase(peak_time, n=168, dt=60, time=False):
     return phase, period
 
 
-def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, time=False):
+def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, time=False, r2_cut=False):
     """データ群に対して二次関数フィッティングを行い，位相等のデータを出力する.
 
     Args:
@@ -135,7 +138,7 @@ def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, t
             r2[:len(fit[1]), i] = fit[3]
             func[:len(fit[1]), i] = fit[2]
             peak_point[:len(fit[1]), i] = fit[4]
-            d_theta[:, i], d_tau[:, i] = make_phase(fit[0], t_n, dt=dt, time=time)
+            d_theta[:, i], d_tau[:, i] = make_phase(fit[0], t_n, dt=dt, time=time, r2=fit[3], r2_cut=r2_cut)
     idx = np.nonzero(np.sum(peak_point, axis=1))  # いらんとこ消す
     idx_0 = peak_point == 0
     peak_t[idx_0], peak_v[idx_0], r2[idx_0], peak_point[

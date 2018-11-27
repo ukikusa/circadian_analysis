@@ -5,12 +5,18 @@ import os
 import sys
 
 import image_analysis as im
+from make_figure import make_hst_fig
+# import matplotlib as mpl
+# mpl.use('Agg')
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import peak_analysis as pa
 from PIL import Image  # Pillowの方を入れる．PILとは共存しない
 
-def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_range=9, offset=0):
+
+def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_range=9, offset=0, r2_cut=0.5):
     """画像データから二次関数フィティングで位相を出す.
 
     Args:
@@ -31,7 +37,7 @@ def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_r
     time = np.arange(imgs.shape[0], dtype=np.float64) * dt / 60 + offset  # 時間データを作成．
     use_xy = np.where(np.sum(imgs, axis=0) != 0)  # データの存在する場所のインデックスをとってくる．
     # 解析
-    peak_a = pa.phase_analysis(imgs[:, use_xy[0], use_xy[1]], avg=avg, p_range=p_range, f_avg=f_avg, f_range=f_range, time=time)
+    peak_a = pa.phase_analysis(imgs[:, use_xy[0], use_xy[1]], avg=avg, p_range=p_range, f_avg=f_avg, f_range=f_range, time=time, r2_cut=r2_cut)
     ###############################
     # 出力
     ###############################
@@ -116,14 +122,37 @@ def peak_img_list(peak_img, per_ber=10, m=5, fold=24):
     return peak_img
 
 
-def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p_range=12, f_avg=1, f_range=5, save=False, make_color=[22, 28], pdf=False, xlsx=False):
+def img_analysis_pdf(save_file, tau, distance_center=True, dt=60):
+    """作図．諸々の解析の．"""
+    pp = PdfPages(save_file)
+    # fig = plt.figure(1, figsize=(6, 4), dpi=100)
+    if distance_center is True:
+        distance_center = (np.array(tau.shape[1:]).astype(np.float64) * 0.5).astype(np.uint8)
+    time = np.arange(0, tau.shape[0], 24 * 60 / dt).astype(np.uint8)
+    tau = tau[time]
+    tau_nan = np.logical_or(np.isnan(tau), tau <= 14)
+    tau_nan = np.logical_or(tau_nan, tau >= 30)
+    fig_n = time.shape[0]
+    for i in range(1, fig_n):
+        if np.sum(~tau_nan):
+            pass
+        tau_idx = np.array(np.where(~tau_nan[i]))
+        distance = np.linalg.norm((tau_idx.T - distance_center), axis=1)
+        title = str(time[i]) + '(h) center[ ' + str(distance_center[0]) + ', ' + str(distance_center[1]) + ']'
+        print(distance.shape, tau[i][~tau_nan[i]].shape)
+        make_hst_fig(save_file=save_file, x=distance, y=tau[i][~tau_nan[i]], min_x=0, max_x=None, min_y=20, max_y=30, max_hist_x=200, max_hist_y=200, bin_hist_x=200, bin_hist_y=100, xticks=False, yticks=False, xticklabels=[], yticklabels=[], xlabel='distance(pixcel)', ylabel='period(h)', pdfpages=pp, box=1, per=True, title=title)
+    pp.close()
+    return 0
+
+
+def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p_range=12, f_avg=1, f_range=5, save=False, make_color=[22, 28], pdf=False, xlsx=False, distance_center=True, r2_cut=0.5):
     """ピクセルごとに二次関数フィッティングにより解析する．
 
     位相・周期・Peak時刻，推定の精度 を出力する．
 
     Args:
         folder: 画像群が入ったフォルダを指定する．
-        avg: ピーク位置推定前の移動平均 (default: {3})
+        mask_folder: 背景が0になっている画像群を指定．
         mesh: 解析前にメッシュ化する範囲 (default: {1} しない)
         dt: Minite (default: {60})
         offset: hour (default: {0})
@@ -134,6 +163,7 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
         make_color: 周期を色付けする範囲 (default: {[22, 28]})
         pdf: PDFを保存するか否か (default: {False})
         xlsx: エクセルを保存するか否か (default: {False})
+        distance_center: 作図の際どこからの距離を取るか (default: {Ture} center)
 
     Returns:
         保存のみの関数．返り値は持たさない(0)．
@@ -154,7 +184,7 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
     ##################################
     # 生物発光の画像群から位相を求める
     ##################################
-    peak_a = make_theta_imgs(imgs, avg=avg, dt=dt, p_range=p_range, f_avg=f_avg, f_range=f_range, offset=offset)
+    peak_a = make_theta_imgs(imgs, avg=avg, dt=dt, p_range=p_range, f_avg=f_avg, f_range=f_range, offset=offset, r2_cut=r2_cut)
     # 位相のデータは醜いので，カラーのデータを返す．
 
     color_theta = im.make_colors(peak_a[0], grey=-1)
@@ -185,14 +215,12 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
         # phaseを0−1で表したものをcsvファイルに
         np.save(os.path.join(save, 'theta.npy'), peak_a[0])
         np.save(os.path.join(save, 'tau.npy'), imgs_tau)
-        # if pdf is not False:
-        #     x = np.linalg.norm(np.asarray(
-        #         peak_a[5]) - 80, axis=0).repeat(np.asarray(peak_a[2]).shape[0])
-        #     y = np.asarray(peak_a[2]).reshape(len(x), order='F')
-        #     x, y = x[~np.isnan(y)], y[~np.isnan(y)]
-        #     max_x, max_y = 45, 1
-        #     make_hst_fig(save_file=pdf, x=x, y=y, max_x=max_x,
-        #                  max_y=max_y, max_hist=500, bin_hist=100)
+        if pdf is not False:
+            if pdf is True:
+                pdf = os.path.join(save, 'analysis.pdf')
+            else:
+                pdf = os.path.join(save, pdf)
+            img_analysis_pdf(save_file=pdf, tau=peak_a[1], distance_center=distance_center, dt=dt)
         if xlsx is not False:
             writer = pd.ExcelWriter(os.path.join(save, "peak_list.xlsx"))
             peak_a[2].T.to_excel(writer, sheet_name='r2', index=False, header=True)  # 保存
