@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
+"""Image analysis."""
 
 import glob
 import itertools
 import os
 import sys
 
-from PIL import Image  # Pillowの方を入れる．PILとは共存しない
-
-import numpy as np
 import cv2
+import numpy as np
+from PIL import Image  # Pillowの方を入れる．PILとは共存しない
 
 
 def read_imgs(img_folder, color=False, extension='tif'):  # 画像入っているフォルダ
@@ -40,7 +40,7 @@ def save_imgs(save_folder, img, file_name='', extension='tif', idx='ALL'):
         os.makedirs(save_folder)
     if extension == 'png':  # pngなんだから非圧縮で保存しようよ
         for i in idx:
-            Image.fromarray(img[i]).save(os.path.join(save_folder, file_name + str(i).zfill(3) + '.' + extension), compress_level=0)
+            Image.fromarray(img[i]).save(os.path.join(save_folder, file_name + str(i).zfill(3) + '.' + extension))
     else:  # tifはデフォルト非圧縮 jpgは圧縮される．
         for i in idx:
             Image.fromarray(img[i]).save(os.path.join(save_folder, file_name + str(i).zfill(3) + '.' + extension))
@@ -87,7 +87,7 @@ def make_colors(img, grey=-2, black=-1):
     return color
 
 
-def mesh_img(folder, mesh=5):
+def mesh_imgs(folder, mesh=5):
     """Make the image mash by taking the average in the vicinity."""
     # 画像のフォルダから画像を全部読み込んできて，全てメッシュ化してしまおう！
     img = read_imgs(folder)

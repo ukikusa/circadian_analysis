@@ -2,10 +2,14 @@
 """Receive the time series image of the phase and reacquire the time when the peak was reached."""
 
 import os
-# import sys
-import numpy as np
-import image_analysis as im
+
 from PIL import Image  # Pillowの方を入れる．PILとは共存しない
+
+import image_analysis as im
+
+import numpy as np
+
+
 # from roop_frond import roop_day
 
 
@@ -21,6 +25,8 @@ def peak_img(dir_path='', phase_path='phase.npy', mask_path='mask_frond', save_p
         mask_img = im.read_imgs(os.path.join(dir_path, mask_path))  # フロンドのある場所を描写
         mask_img = mask_img[idx_t[0]: idx_t[1]]
         peak_time_img[mask_img[:-1] != 0] = 50
+    else:
+        peak_time_img[~np.isnan(phase[:-1])] = 50
     # peakの来ている場所を描写
     peak_time_img[diff < 0] = 255
     peak_sum = np.sum(peak_time_img == 255, axis=(1, 2))

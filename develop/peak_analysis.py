@@ -105,8 +105,8 @@ def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, t
         time: {list or np.array} 時間軸．dt, offsetと共存しない． (default: {False})
 
     Returns:
-        [[peak時間]，[Peakの値]，[Phase list]，[r2]，[p_rangeによりpeakのindex(移動平均後)]
-        [np.arrayの入ったリスト]
+        [[頂点のx]，[頂点のy]，[Phase list]，[r2]，[Fittingのindex], [Fitingの係数], [tau_list]]
+        [np.arrayのリスト]
     """
     t_n = data.shape[0]
     d_n = data.shape[1]
