@@ -4,8 +4,8 @@
 import os
 import textwrap
 
-import matplotlib as mpl
-mpl.use('Agg')
+# import matplotlib as mpl
+# mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
@@ -39,13 +39,13 @@ def multi_plot(x, y, save_path, peak=False, func=False, r=False, label=False, y_
         plt.tight_layout()  # レイアウト
         plt.savefig(pp, format='pdf')
         plt.clf()
-        fig = plt.figure(figsize=(size_x, size_y), dpi=100)
     ################ ループ ##############
     for i in range(y.shape[1]):
         # 1pageに対して，配置する graf の数．配置する graf の場所を指定．
         i_mod = i % plt_n
         ax.append(fig.add_subplot(plt_x, plt_y, i_mod + 1))
         # プロット
+        print(ax)
         ax[i_mod].plot(x, y[:, i], linewidth=0, marker='.')
         # 軸の調整とか
         ax[i_mod].set_xlim(left=0)  # x軸
@@ -55,6 +55,7 @@ def multi_plot(x, y, save_path, peak=False, func=False, r=False, label=False, y_
                        linestyle='dotted', lw=0.5)  # 縦の補助線
         ax[i_mod].set_title(label[i])
         ax[i_mod].tick_params(labelbottom=True, labelleft=True, labelsize=5)
+
         ############## fittingのプロット #################
         if peak is not False:
             peak_i = peak[:, i]
@@ -65,6 +66,9 @@ def multi_plot(x, y, save_path, peak=False, func=False, r=False, label=False, y_
         ############## pdfの保存 #################
         if np.mod(i, plt_n) == plt_n - 1:
             pdf_save(pp)
+            plt.clf()
+            ax = []
+            print(ax)
     ########## 残ったやつのPDFの保存 ############
     if np.mod(i, plt_n) != plt_n - 1:
         pdf_save(pp)

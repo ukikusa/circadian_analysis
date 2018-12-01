@@ -15,7 +15,7 @@ def moving_avg(data, avg=2):
     return avg_data
 
 
-def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0.7):
+def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0):
     """二次関数フィッティングを行う．
 
     Args:
@@ -63,7 +63,66 @@ def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0.7):
     return peak_t[j == 1], peak_v[j == 1], func[j == 1], r2[j == 1], p_tmp[j == 1]
 
 
-def make_phase(peak_time, n=168, dt=60, time=False, r2=False, r2_cut=False):
+def peak_cut(peak_t, peak_v, func, r2, p_tmp, min_tau=16, max_tau=32):
+    """不要なピークをカットする．"""
+    dic = {'peak_v': peak_v, 'func': func, 'p_tmp': p_tmp}
+
+    def edege_long_del(peak_t, r2, max_tau=32, **dic):
+        """"両はじに長い周期があったらそれを消す"""
+        tau = np.diff(peak_t)
+        big_idx = tau > max_tau
+        if len(tau) == 1 and ~big_idx[0]:
+            dic = {k: [] for (k, v) in dic.items()}
+            return [], [], dic
+        if big_idx[0] is True:
+            peak_t, r2, big_idx = peak_t[1:], r2[1:], big_idx[1:]
+            dic = {k: v[1:] for (k, v) in dic.items()}
+            return peak_t, r2, dic
+        if big_idx[-1] is True:
+            peak_t, r2 = peak_t[:-1], r2[:-1]
+            dic = {k: v[:-1] for (k, v) in dic.items()}
+        return peak_t, r2, dic
+
+    def short_tau_peak_del(peak_t, r2, min_tau=16, max_tau=32, **dic):
+        """周期が短すぎるとき，ピークを一つ削除．
+
+        両側のいずれのかの周期が16以下かつ，両側の周期を足したら32以下になるPeakを一つ削除．一番R2値が小さいのもの．
+        """
+        tau = np.diff(peak_t)  # 周期
+        tau_2 = tau[:-1] + tau[1:]  # ピークを消したときの周期
+        short_tau = tau <= min_tau  # 周期が短すぎるところのIndex
+        short_tau_2 = short_tau[:-1] + short_tau[1:]
+        del_opt = short_tau_2 * (tau_2 <= max_tau)
+        if np.sum(del_opt) == 0:
+            return peak_t, r2, dic
+        # 削除する対象がなければ終わる
+        ##############################
+        r2_tmp = np.ones_like(r2)
+        r2_tmp[1:-1][del_opt] = r2[1:-1][del_opt]
+        del_idx = np.argmin(r2_tmp)
+        peak_t = np.delete(peak_t, obj=del_idx)
+        r2 = np.delete(r2, obj=del_idx)
+        dic = {k: np.delete(v, obj=del_idx, axis=0) for (k, v) in dic.items()}
+        return peak_t, r2, dic
+
+    ###################
+    # ここまで関数の定義
+    ####################
+    if len(peak_t) <= 1:
+        return [], [], [], [], []
+    for i in range(len(peak_t)):
+        peak_t, r2, dic = short_tau_peak_del(peak_t, r2, **dic)
+        if len(peak_t) <= 1:
+            return [], [], [], [], []
+        peak_t, r2, dic = edege_long_del(peak_t, r2, **dic)
+        if len(peak_t) <= 1:
+            return [], [], [], [], []
+        if i == len(peak_t):
+            return peak_t, dic['peak_v'], dic['func'], r2, dic['p_tmp']
+    return peak_t, dic['peak_v'], dic['func'], r2, dic['p_tmp']
+
+
+def make_phase(peak_time, n=168, dt=60, time=False, r2=False, min_tau=16, max_tau=32):
     """A function that creates a list of phases from the peak list.
 
     Args:
@@ -79,23 +138,23 @@ def make_phase(peak_time, n=168, dt=60, time=False, r2=False, r2_cut=False):
     peak_time = np.array(peak_time)
     no_nan = ~np.isnan(peak_time)
     peak_time = peak_time[no_nan]
-    if r2_cut is not False:
-        peak_time = peak_time[r2[no_nan] >= r2_cut]
     if time is False:
         time = np.arange(n) * dt / 60
     phase = np.empty(len(time), dtype=np.float64)
     phase[:] = np.nan
-    period = np.copy(phase)
+    tau = np.copy(phase)
     if peak_time != []:
         peak_idx = np.searchsorted(time, peak_time)  # timeに当たるindex
         for i in range(peak_time.shape[0] - 1):
             # ピークとピークの間を0-1に均等割．
-            phase[peak_idx[i]:peak_idx[i + 1]] = (time[peak_idx[i]:peak_idx[i + 1]] - peak_time[i]) / (peak_time[i + 1] - peak_time[i])
-            period[peak_idx[i]:peak_idx[i + 1]] = peak_time[i + 1] - peak_time[i]
-    return phase, period
+            tai_i = peak_time[i + 1] - peak_time[i]
+            if tai_i <= max_tau and tai_i >= min_tau:
+                phase[peak_idx[i]:peak_idx[i + 1]] = (time[peak_idx[i]:peak_idx[i + 1]] - peak_time[i]) / (peak_time[i + 1] - peak_time[i])
+                tau[peak_idx[i]:peak_idx[i + 1]] = peak_time[i + 1] - peak_time[i]
+    return phase, tau
 
 
-def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, time=False, r2_cut=False):
+def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, time=False, r2_cut=False, min_tau=16, max_tau=32):
     """データ群に対して二次関数フィッティングを行い，位相等のデータを出力する.
 
     Args:
@@ -132,13 +191,18 @@ def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, t
         if len(p_tmp_i) <= 1:
             d_theta[:, i], d_tau[:, i] = np.nan, np.nan
         else:
-            fit = peak_find(data[:, i], p_tmp=p_tmp_i, avg=f_avg, f_range=f_range, time=time)
-            peak_t[:len(fit[0]), i] = fit[0]
-            peak_v[:len(fit[1]), i] = fit[1]
-            r2[:len(fit[1]), i] = fit[3]
-            func[:len(fit[1]), i] = fit[2]
-            peak_point[:len(fit[1]), i] = fit[4]
-            d_theta[:, i], d_tau[:, i] = make_phase(fit[0], t_n, dt=dt, time=time, r2=fit[3], r2_cut=r2_cut)
+            peak_t_i, peak_v_i, func_i, r2_i, p_tmp_i = peak_find(data[:, i], p_tmp=p_tmp_i, avg=f_avg, f_range=f_range, time=time, r2_cut=r2_cut)
+            fit = peak_cut(peak_t_i, peak_v_i, func_i, r2_i, p_tmp_i, min_tau=min_tau, max_tau=max_tau)
+
+            if len(fit[0]) <= 1:
+                d_theta[:, i], d_tau[:, i] = np.nan, np.nan
+            else:
+                peak_t[:len(fit[0]), i] = fit[0]
+                peak_v[:len(fit[1]), i] = fit[1]
+                r2[:len(fit[1]), i] = fit[3]
+                func[:len(fit[1]), i] = fit[2]
+                peak_point[:len(fit[1]), i] = fit[4]
+                d_theta[:, i], d_tau[:, i] = make_phase(fit[0], t_n, dt=dt, time=time, r2=fit[3], min_tau=min_tau, max_tau=max_tau)
     idx = np.nonzero(np.sum(peak_point, axis=1))  # いらんとこ消す
     idx_0 = peak_point == 0
     peak_t[idx_0], peak_v[idx_0], r2[idx_0], peak_point[

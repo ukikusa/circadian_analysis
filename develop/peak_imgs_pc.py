@@ -3,14 +3,9 @@
 
 import os
 
-from PIL import Image  # Pillowの方を入れる．PILとは共存しない
-
 import image_analysis as im
-
 import numpy as np
-
-
-# from roop_frond import roop_day
+from PIL import Image  # Pillowの方を入れる．PILとは共存しない
 
 
 def peak_img(dir_path='', phase_path='phase.npy', mask_path='mask_frond', save_path='peak_time_img', peak_n=0, peak_per=0, idx_t=[24, 24 * 4 + 1]):
