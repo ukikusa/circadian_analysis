@@ -4,13 +4,11 @@
 import os
 import sys
 
-from PIL import Image  # Pillowの方を入れる．PILとは共存しない
-
 import image_analysis as im
 
 from make_figure import make_hst_fig
 
-import matplotlib as mpl
+# import matplotlib as mpl
 # mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 # import matplotlib.pyplot as plt
@@ -20,6 +18,8 @@ import numpy as np
 import pandas as pd
 
 import peak_analysis as pa
+
+from PIL import Image  # Pillowの方を入れる．PILとは共存しない
 
 
 def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_range=9, offset=0, r2_cut=0.5, min_tau=16, max_tau=32):
@@ -60,15 +60,15 @@ def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_r
         peak_a[6][np.isnan(peak_a[6])] = -1
         cv[np.isnan(cv)] = -1
         sd[np.isnan(sd)] = -1
-    else:
-        peak_a[2][np.isnan(peak_a[2]) * mask_img != 0] = -1
-        peak_a[6][np.isnan(peak_a[6]) * mask_img != 0] = -1
-        cv[np.isnan(cv) * mask_img != 0] = -1
-        sd[np.isnan(sd) * mask_img != 0] = -1
     theta_imgs[:, use_xy[0], use_xy[1]] = peak_a[2]
     tau_imgs[:, use_xy[0], use_xy[1]] = peak_a[6]
     cv_imgs[:, use_xy[0], use_xy[1]] = cv
     sd_imgs[:, use_xy[0], use_xy[1]] = sd
+    if mask_img is not False:
+        theta_imgs[np.isnan(theta_imgs) * mask_img > 0] = -1
+        tau_imgs[np.isnan(tau_imgs) * mask_img > 0] = -1
+        cv_imgs[np.isnan(cv_imgs) * mask_img > 0] = -1
+        sd_imgs[np.isnan(sd_imgs) * mask_img > 0] = -1
     return theta_imgs, tau_imgs, r2, peak_a[4], peak_a[5], p_time, use_xy, cv_imgs, sd_imgs
 
 
@@ -134,7 +134,7 @@ def peak_img_list(peak_img, per_ber=10, m=5, fold=24):
     return peak_img
 
 
-def img_analysis_pdf(save_folder, tau, r2, cv, distance_center=True, dt=60):
+def img_analysis_pdf(save_folder, tau, r2, cv, sd, distance_center=True, dt=60):
     """作図．諸々の解析の.
 
     周期の画像を投げられて，Distance_centerからの距離を測る
@@ -145,9 +145,11 @@ def img_analysis_pdf(save_folder, tau, r2, cv, distance_center=True, dt=60):
     time = np.arange(0, tau.shape[0], 24 * 60 / dt).astype(np.uint8)
     # 使うデータだけに絞る
     tau = tau[time]
-    tau_nan = np.logical_or(np.isnan(tau), tau < 0)
+    tau_nan = np.logical_or(np.isnan(tau), tau <= 0)
     cv = cv[time]
-    cv_nan = np.logical_or(np.isnan(cv), cv < 0)
+    cv_nan = np.logical_or(np.isnan(cv), cv <= 0)
+    sd = sd[time]
+    sd_nan = np.logical_or(np.isnan(sd), sd <= 0)
     fig_n = time.shape[0]
     #######################
     # 距離と周期の相関
@@ -155,9 +157,10 @@ def img_analysis_pdf(save_folder, tau, r2, cv, distance_center=True, dt=60):
     pp = PdfPages(os.path.join(save_folder, 'tau-distance.pdf'))
     if distance_center is True:
         distance_center = (np.array(tau.shape[1:]).astype(np.float64) * 0.5).astype(np.uint8)
-    for i in range(1, fig_n):
-        if np.sum(~tau_nan[i]):
-            pass
+    roops = np.where(np.sum(~tau_nan, axis=(1, 2)) >= 3)[0]
+    print(roops)
+    for i in roops:
+        print(tau[i][~tau_nan[i]].size)
         tau_idx = np.array(np.where(~tau_nan[i]))
         distance = np.linalg.norm((tau_idx.T - distance_center), axis=1)
         title = str(time[i]) + '(h) center[ ' + str(distance_center[0]) + ', ' + str(distance_center[1]) + ']'
@@ -168,11 +171,17 @@ def img_analysis_pdf(save_folder, tau, r2, cv, distance_center=True, dt=60):
     #######################
     pp = PdfPages(os.path.join(save_folder, 'tau-CV_amp.pdf'))
     cv_tau_nan = np.logical_or(cv_nan, tau_nan)
-    for i in range(1, fig_n - 1):
-        if np.sum(~cv_tau_nan[i]):
-            pass
+    roops = np.where(np.sum(~cv_tau_nan, axis=(1, 2)) >= 3)[0]
+    for i in roops:
         title = str(time[i]) + '(h)'
         make_hst_fig(save_file=save_folder, x=tau[i][~cv_tau_nan[i]], y=cv[i][~cv_tau_nan[i]], min_x=16, max_x=32, min_y=0, max_y=None, max_hist_x=200, max_hist_y=200, bin_hist_x=200, bin_hist_y=100, xticks=False, yticks=False, xticklabels=[], yticklabels=[], xlabel='period(h)', ylabel='cv(amp)', pdfpages=pp, box=1, per=True, title=title)
+    pp.close()
+    pp = PdfPages(os.path.join(save_folder, 'tau-sd_amp.pdf'))
+    sd_tau_nan = np.logical_or(sd_nan, tau_nan)
+    roops = np.where(np.sum(~sd_tau_nan, axis=(1, 2)) >= 3)[0]
+    for i in roops:
+        title = str(time[i]) + '(h)'
+        make_hst_fig(save_file=save_folder, x=tau[i][~sd_tau_nan[i]], y=sd[i][~sd_tau_nan[i]], min_x=16, max_x=32, min_y=0, max_y=None, max_hist_x=200, max_hist_y=200, bin_hist_x=200, bin_hist_y=100, xticks=False, yticks=False, xticklabels=[], yticklabels=[], xlabel='period(h)', ylabel='cv(amp)', pdfpages=pp, box=1, per=True, title=title)
     pp.close()
     return 0
 
@@ -235,8 +244,11 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
     ####################################
     # 保存用にCVを整形
     ####################
-    color_cv = im.make_colors(cv / np.nanmax(cv) * 0.7, grey=-1)
-    color_sd = im.make_colors(sd / np.nanmax(sd) * 0.7, grey=-1)
+    color_cv = cv / np.nanmax(cv) * 0.7
+    color_sd = sd / np.nanmax(sd) * 0.7
+    color_cv[cv <= 0], color_sd[sd <= 0] = -1, -1
+    color_cv = im.make_colors(color_cv, grey=-1)
+    color_sd = im.make_colors(color_sd, grey=-1)
     ####################################
     # Peakの画像の作成
     ####################################
@@ -262,7 +274,7 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
                 pdf = os.path.join(save, 'pdf')
             else:
                 pdf = os.path.join(save, pdf)
-            img_analysis_pdf(save_folder=pdf, tau=peak_a[1], r2=peak_a[2], cv=cv, distance_center=distance_center, dt=dt)
+            img_analysis_pdf(save_folder=pdf, tau=peak_a[1], r2=peak_a[2], cv=cv, sd=sd, distance_center=distance_center, dt=dt)
         if xlsx is not False:
             writer = pd.ExcelWriter(os.path.join(save, "peak_list.xlsx"))
             peak_a[2].T.to_excel(writer, sheet_name='r2', index=False, header=True)  # 保存

@@ -1,6 +1,8 @@
 # -*-coding: utf-8 -*-
 """area."""
 
+import os
+
 import matplotlib as mpl
 # mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
@@ -34,7 +36,7 @@ def plot_dif(x, y, save_path, title=False, ylabel='increace_rate(%)', log=False,
         plt.plot(x, y[:, i], lw=0.5, color=cm.jet(i / data_n))
     if log is True:
         plt.yscale("log")
-        plt.ylim(bottom=0.01, top=100)
+        # plt.ylim(bottom=0.01, top=100)
     plt.xlim(0, 24 * 8)
     plt.xticks(range(0, 24 * 8, 24))
     plt.xlabel('time(h)')
@@ -69,8 +71,12 @@ def area_analysis(data, save, dt=60, avg=False, label=False):
     x24, per_dif24 = per_dif(x, data_v, dif_n=dif_n)
     x_dif = x[:-dif_n]
     data_dif = data_v[dif_n:] - data_v[:-dif_n]
+    folder = os.path.dirname(save)
+    if os.path.exists(folder) is False:
+        os.makedirs(folder)
     pp = PdfPages(save)
     plot_dif(x, data_v, save_path=pp, title='averate_' + str(avg) + '-diff_24', ylabel='area(pixel)', label=label)
+    plot_dif(x, data_v, save_path=pp, title='averate_' + str(avg) + '-diff_24', ylabel='area(pixel)', label=label, log=True)
     plot_dif(x_dif, data_dif, save_path=pp, title='average_-diff_24', ylabel='diff(pixel)', label=label)
     plot_dif(x24, per_dif24, save_path=pp, title='average_' + str(avg) + '-diff_24', label=label)
     plot_dif(x24, per_dif24, save_path=pp, title='average_' + str(avg) + '-diff_24', log=True, label=label)

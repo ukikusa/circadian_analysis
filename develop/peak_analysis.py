@@ -17,15 +17,18 @@ def moving_avg(data, avg=2):
 
 def amp_analysis(data, h_range=24):
     range_2 = int(h_range / 2)
-    cv = np.empty_like(data, dtype=np.float64)
+    data = data.astype(np.float64)
+    cv = np.empty_like(data)
+    data[data == 0] = np.nan
     cv[:] = np.nan
     sd = np.copy(cv)
     n = data.shape[0]
     n_e = n - range_2
     for i in range(range_2, n_e):
-        sd_i = np.std(data[i - range_2:i + range_2], axis=0)
+        data_i = data[i - range_2:i + range_2]
+        sd_i = np.std(data_i, axis=0)
         sd[i] = sd_i
-        cv[i] = sd_i / np.average(data[i - range_2:i + range_2], axis=0)
+        cv[i] = sd_i / np.average(data_i, axis=0)
     return cv, sd
 
 
