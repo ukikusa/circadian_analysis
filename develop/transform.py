@@ -1,14 +1,21 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import os
-import cv2
+
 import glob
-import sys
-import matplotlib.pyplot as plt
-import image_analysis as im
-import pandas as pd
 import itertools
+import os
+import sys
+
+import cv2
+
+import image_analysis as im
+
+import matplotlib.pyplot as plt
+
+import numpy as np
+
+import pandas as pd
+
 
 
 def get_warp(trans, rotation=False, size=120):
@@ -57,7 +64,7 @@ def img_transformECC(tmp_img, new_img, motionType=1, centroid=[0,0]):
         warp = get_warp(rotation=warp, trans=centroid, size=size)
     out = cv2.warpAffine(new_img, warp, size, flags=cv2.INTER_NEAREST)
     out[np.nonzero(out)] = np.max(out) - temp
-    return out, warp
+    return out, warp, temp
 
 
 def imgs_transformECC(calc_img, centroids=False, motionType=1):
@@ -69,10 +76,30 @@ def imgs_transformECC(calc_img, centroids=False, motionType=1):
     else:
         centroids = np.modf(centroids)[0]  # 少数部分のみ
     tmp = np.max(calc_img, axis=(1, 2))
-    roop = np.where((tmp[:-1]*tmp[1:]) != 0)[0]
+    roop = np.where((tmp[:-1] * tmp[1:]) != 0)[0]
     for i in roop:  # 全部黒ならする必要ない．
-        calc_img[i+1][np.nonzero(calc_img[i+1])] = np.max(calc_img[i])
-        calc_img[i+1], warps[i] = img_transformECC(calc_img[i], calc_img[i+1], motionType=motionType, centroid=centroids[i])
+        calc_img[i + 1][np.nonzero(calc_img[i + 1])] = np.max(calc_img[i])
+        calc_img[i + 1], warps[i], _ = img_transformECC(calc_img[i], calc_img[i + 1], motionType=motionType, centroid=centroids[i])
+    return calc_img, warps, roop
+
+
+def imgs_transformECC_ver2(calc_img, centroids=False, motionType=1):
+    # 移動補正をまとめた．
+    warps = np.zeros((calc_img.shape[0] - 1, 2, 3), dtype=np.float32)
+    warps[:, 0, 0], warps[:, 1, 1] = 1, 1
+    if centroids is False:
+        centroids = np.zeros((calc_img.shape[0]))
+    else:
+        centroids = np.modf(centroids)[0]  # 少数部分のみ
+    tmp = np.max(calc_img, axis=(1, 2))
+    roop = np.where((tmp[:-1]*tmp[1:]) != 0)[0]
+    try_r = 0
+    tmp_img = calc_img[0]
+    for i in roop:  # 全部黒ならする必要ない．
+        if try_r == 1:  # 直前の画像が移動補正に失敗した場合
+            calc_img[i + 1][np.nonzero(calc_img[i + 1])] = np.max(calc_img[i])
+            tmp_img = calc_img[i]
+        calc_img[i + 1], warps[i], try_r = img_transformECC(tmp_img, calc_img[i + 1], motionType=motionType, centroid=centroids[i])
     return calc_img, warps, roop
 
 
@@ -80,7 +107,7 @@ def img_transformPOC(tmp_img, new_img):
     if np.max(tmp_img) > 255 or np.max(new_img) > 255:
         tmp_img = im.bit1628(tmp_img)
         new_img = im.bit1628(new_img)
-    out, warp = img_transformECC(tmp_img, new_img, motionType=1, centroid=False)
+    out, warp, _ = img_transformECC(tmp_img, new_img, motionType=1, centroid=False)
     tmp_img, out = tmp_img.astype(np.float32), out.astype(np.float32)
     tmp_img[tmp_img != 0] = np.max(out)
     size = new_img.shape    # 出力画像のサイズを指定
@@ -103,23 +130,23 @@ def imgs_transformPOC(calc_img):
     calc_img_float = np.float32(calc_img)
     # フロンドのある画像のみ抽出
     tmp = np.max(calc_img, axis=(1, 2))
-    roop = np.where((tmp[:-1]*tmp[1:]) != 0)[0]
-    # 箱を作ったりの初期設定
+    roop = np.where((tmp[:-1] * tmp[1:]) != 0)[0]
+    # 箱を作ったりの初期設定 
     warps = np.zeros((calc_img.shape[0] - 1, 2, 3), dtype=np.float32)
     warps[:, 0, 0], warps[:, 1, 1] = 1, 1
     size = calc_img[0].shape
     for i in roop:
-        calc_img[i+1], warps[i] = img_transformPOC(calc_img[i], calc_img[i+1])
+        calc_img[i + 1], warps[i] = img_transformPOC(calc_img[i], calc_img[i + 1])
     return calc_img, warps, roop
 
 
 def img_transform(warps, roops, *imgs):
     if roops is False:
-        roop = range(waps.shape[0])
+        roops = range(warps.shape[0])
     for i in range(len(imgs)):
         size = imgs[i][0].shape
         for j in roops:
-            imgs[i][j+1] = cv2.warpAffine(imgs[i][j+1], warps[j], size, flags=cv2.INTER_NEAREST)  # 平行移動の実行．
+            imgs[i][j + 1] = cv2.warpAffine(imgs[i][j + 1], warps[j], size, flags=cv2.INTER_NEAREST)  # 平行移動の実行．
     return imgs
 
 
@@ -153,16 +180,20 @@ if __name__ == '__main__':
             print('ECC')
             move_img, warps, roops = imgs_transformECC(calc_img)
             trance.at[i, 'ECC_moved'] = np.sum((move_img[0]!=0) != (move_img[-1]!=0))/(np.sum(move_img[-1] != 0))*0.5
+
+            ############### ECCver2 ################
+            print('ECC')
+            move_img, warps, roops = imgs_transformECC_ver2(calc_img)
+            trance.at[i, 'ECC_moved_2'] = np.sum((move_img[0]!=0) != (move_img[-1]!=0))/(np.sum(move_img[-1] != 0))*0.5
             ############## ECCと重心 #################
             # print('ECCと重')
             # move_img, warps, roops = imgs_transformECC(calc_img, centroids=centroids)
             # trance.at[i, 'cg_move'] = np.sum(move_img[0] != move_img[-1])/(np.sum(move_img[-1] != 0))*0.5
-            
-            imgs = img_transform(warps, roops,  mask_lum_img, lum_img)
-            np.save(i + '/warps.npy', warps)
-            warps.resize(((calc_img.shape[0] - 1), 3))
-            np.savetxt(i + '/warps.csv', warps, delimiter=',')
-            im.save_imgs(i + '/moved_mask_frond', move_img)
-            im.save_imgs(i + '/moved_mask_frond_lum', imgs[0])
-            im.save_imgs(i + '/moved_frond_lum', imgs[1])
+            imgs = img_transform(warps, roops, mask_lum_img, lum_img)
+            # np.save(i + '/warps.npy', warps)
+            # warps.resize(((calc_img.shape[0] - 1), 3))
+            # np.savetxt(i + '/warps.csv', warps, delimiter=',')
+            # im.save_imgs(i + '/moved_mask_frond', move_img)
+            # im.save_imgs(i + '/moved_mask_frond_lum', imgs[0])
+            # im.save_imgs(i + '/moved_frond_lum', imgs[1])
         trance.to_csv(os.path.join(day, 'tranc.csv'))

@@ -15,8 +15,22 @@ def moving_avg(data, avg=2):
     return avg_data
 
 
+def amp_analysis(data, h_range=24):
+    range_2 = int(h_range / 2)
+    cv = np.empty_like(data, dtype=np.float64)
+    cv[:] = np.nan
+    sd = np.copy(cv)
+    n = data.shape[0]
+    n_e = n - range_2
+    for i in range(range_2, n_e):
+        sd_i = np.std(data[i - range_2:i + range_2], axis=0)
+        sd[i] = sd_i
+        cv[i] = sd_i / np.average(data[i - range_2:i + range_2], axis=0)
+    return cv, sd
+
+
 def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0):
-    """二次関数フィッティングを行う．
+    """二次関数フィッティングを行う.
 
     Args:
         data: {np.array. 1} 1次元のArray
@@ -64,11 +78,11 @@ def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0):
 
 
 def peak_cut(peak_t, peak_v, func, r2, p_tmp, min_tau=16, max_tau=32):
-    """不要なピークをカットする．"""
+    """不要なピークをカットする."""
     dic = {'peak_v': peak_v, 'func': func, 'p_tmp': p_tmp}
 
     def edege_long_del(peak_t, r2, max_tau=32, **dic):
-        """"両はじに長い周期があったらそれを消す"""
+        """"両はじに長い周期があったらそれを消す."""
         tau = np.diff(peak_t)
         big_idx = tau > max_tau
         if len(tau) == 1 and ~big_idx[0]:
@@ -84,7 +98,7 @@ def peak_cut(peak_t, peak_v, func, r2, p_tmp, min_tau=16, max_tau=32):
         return peak_t, r2, dic
 
     def short_tau_peak_del(peak_t, r2, min_tau=16, max_tau=32, **dic):
-        """周期が短すぎるとき，ピークを一つ削除．
+        """周期が短すぎるとき，ピークを一つ削除.
 
         両側のいずれのかの周期が16以下かつ，両側の周期を足したら32以下になるPeakを一つ削除．一番R2値が小さいのもの．
         """

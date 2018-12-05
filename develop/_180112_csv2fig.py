@@ -89,7 +89,7 @@ def csv2fig_all(file, pdf_save, avg, dt, ymax, offset=0, loc="upper left", use_d
     plt.figure(figsize=(6, 4), dpi=100)  # A4余裕あり．かつ半分
     plt.axes(axisbg="0.7")
     for i in range(data.shape[1]):
-        # pdf一ページに対して，配置するグラフの数．配置するグラフの場所を指定．
+        # pdf一ヘーシに対して，配置するグラフの数．配置するクラフの場所を指定．
         if avg is not False:
             data_move = pa.moving_avg(data[:, i], avg=avg)
         else:

@@ -4,8 +4,6 @@
 import os
 import textwrap
 
-# import matplotlib as mpl
-# mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
@@ -33,19 +31,22 @@ def multi_plot(x, y, save_path, peak=False, func=False, r=False, label=False, y_
     pp = PdfPages(save_path)
     fig = plt.figure(figsize=(size_x, size_y), dpi=100)
     ax = []
-    ################ pdfの保存関数 ここから##############
+    ###############
+    # pdfの保存関数 ここから
+    ##############
 
     def pdf_save(pp):
         plt.tight_layout()  # レイアウト
         plt.savefig(pp, format='pdf')
         plt.clf()
-    ################ ループ ##############
+    ###############
+    # ループ
+    ##############
     for i in range(y.shape[1]):
         # 1pageに対して，配置する graf の数．配置する graf の場所を指定．
         i_mod = i % plt_n
         ax.append(fig.add_subplot(plt_x, plt_y, i_mod + 1))
         # プロット
-        print(ax)
         ax[i_mod].plot(x, y[:, i], linewidth=0, marker='.')
         # 軸の調整とか
         ax[i_mod].set_xlim(left=0)  # x軸
@@ -56,20 +57,24 @@ def multi_plot(x, y, save_path, peak=False, func=False, r=False, label=False, y_
         ax[i_mod].set_title(label[i])
         ax[i_mod].tick_params(labelbottom=True, labelleft=True, labelsize=5)
 
-        ############## fittingのプロット #################
+        #############
+        # fittingのプロット
+        #################
         if peak is not False:
             peak_i = peak[:, i]
             peak_i = peak_i[~np.isnan(peak_i)]
             for count, j in enumerate(peak_i):
                 ax[i_mod].plot(x[int(j - r):int(j + r)], np.poly1d(func[count, i])
                                (x[int(j - r): int(j + r)]), '-r', lw=1)
-        ############## pdfの保存 #################
+        #############
+        # pdfの保存
+        #################
         if np.mod(i, plt_n) == plt_n - 1:
             pdf_save(pp)
-            plt.clf()
             ax = []
-            print(ax)
-    ########## 残ったやつのPDFの保存 ############
+    #########
+    # 残ったやつのPDFの保存
+    ############
     if np.mod(i, plt_n) != plt_n - 1:
         pdf_save(pp)
     plt.clf()
@@ -104,7 +109,11 @@ def make_hst_fig(save_file, x, y, min_x=0, max_x=None, min_y=0, max_y=None, max_
     if per is True:
         r, p = scipy.stats.pearsonr(x, y)
         r_p_text = textwrap.wrap(
-            'Pearson’s correlation coefficient: ' + '{:.2g}'.format(r), 30)
+            'x mean: ' + '{:.3g}'.format(np.mean(x)), 30)
+        r_p_text.extend(textwrap.wrap(
+            'y mean: ' + '{:.2g}'.format(np.mean(y)), 30))
+        r_p_text.extend(textwrap.wrap(
+            'Pearson’s correlation coefficient: ' + '{:.2g}'.format(r), 30))
         r_p_text.extend(textwrap.wrap(
             '2-taild p-value: ' + '{:.2g}'.format(p), 30))
         fig.text(sc_left + sc_width + space, sc_bottom +
