@@ -2,7 +2,7 @@
 """area."""
 
 import matplotlib as mpl
-mpl.use('Agg')
+# mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt

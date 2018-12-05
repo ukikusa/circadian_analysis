@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 # 下２行は，リモートで操作している場合
 # import matplotlib as mpl
-# mpl.use('Agg')
+# # mpl.use('Agg')
 
 # 仮バージョン
 

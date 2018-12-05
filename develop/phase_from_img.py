@@ -11,7 +11,7 @@ import image_analysis as im
 from make_figure import make_hst_fig
 
 import matplotlib as mpl
-mpl.use('Agg')
+# mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
 # import matplotlib.pyplot as plt
 

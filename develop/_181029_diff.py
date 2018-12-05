@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 # 下２行は，リモートで操作している場合
 import matplotlib as mpl
-mpl.use('Agg')
+# mpl.use('Agg')
 
 
 def phase_diff(phase_img, pp=False, scale=1, title='', x_max=3.5, x_range=0.05):
