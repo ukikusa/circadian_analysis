@@ -1,7 +1,8 @@
 # circadian_analysis
 リズム解析に関するプログラム開発です．  
-FFT_nlls以外でRでできることはできるようにしているつもりです．  
-他に，ピクセルごとの解析ができます．
+FFT_nllsはanalysis/FFT_nlls.pyで行えますが，取り回しを良くする作業はまだしていません．  
+
+ピクセルごとに位相と振幅(cv)を求める解析ができます．
 
 # Dependency
 python3 (3.7.0にて動作確認)  
@@ -11,17 +12,19 @@ library: -pip file 参照
 <details><summary>python3のインストールは，各自で．一応参考を畳んでおきます．</summary>
  mac	は下記をコマンドプロットにコピー&ペースト．
 
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+ 	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	brew install python3
 	python3 -V
 
- windows
-
-	https://qiita.com/taiponrock/items/f574dd2cddf8851fb02c  
-	とありますが上野は，VertualboxにUbuntuをインストールすることをおすすめします．  
-	https://qiita.com/ykawakami/items/4bae371932110b2e25e3  
-	設定済みのVertual box を渡すことも可能です．
-
+ windows10
+	
+  ~~https://qiita.com/taiponrock/items/f574dd2cddf8851fb02c~~  
+  ~~とありますが上野は，VertualboxにUbuntuをインストールすることをおすすめします．~~  
+  ~~https://qiita.com/ykawakami/items/4bae371932110b2e25e3~~  
+  ~~設定済みのVertual box を渡すことも可能です．~~  
+  Windows Subsystem for Linuxを使ってください．  
+  http://www.aise.ics.saitama-u.ac.jp/~gotoh/UbuntuOnWSL.html
+	
  </details>>
 ライブラリのインストール (-pipは各自パスを入れてください．)
 
