@@ -15,7 +15,7 @@ def moving_avg(data, avg=2):
     return avg_data
 
 
-def amp_analysis(data, h_range=24):
+def amp_analysis(data, h_range=24 * 3):
     range_2 = int(h_range / 2)
     data = data.astype(np.float64)
     cv = np.empty_like(data)
@@ -192,12 +192,13 @@ def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, t
     if time is False:
         time = np.arange(data.shape[0], dtype=np.float64) * dt / 60 + offset
     p_tmp = signal.argrelmax(data, order=p_range, axis=0)  # 周りより値が大きい点抽出
-    p_tmp_n = np.max(np.bincount(p_tmp[0]))
+    p_tmp_n = np.max(np.bincount(p_tmp[1]))
     ###############
     # peakや時間を出力する箱を作る.
     ###############
     d_theta = np.empty_like(data, dtype=np.float64)
     d_tau = np.empty_like(data, dtype=np.float64)
+    print(p_tmp)
     peak_t = np.zeros((p_tmp_n, d_n), dtype=np.float64)
     peak_v, r2, peak_point = np.zeros_like(peak_t), np.zeros_like(peak_t), np.zeros_like(peak_t)
     func = np.zeros((p_tmp_n, data.shape[1], 3))

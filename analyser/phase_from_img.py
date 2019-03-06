@@ -44,7 +44,7 @@ def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_r
     use_xy = np.where(np.sum(imgs, axis=0) != 0)  # データの存在する場所のインデックスをとってくる．
     # 解析
     peak_a = pa.phase_analysis(imgs[:, use_xy[0], use_xy[1]], avg=avg, p_range=p_range, f_avg=f_avg, f_range=f_range, time=time, r2_cut=r2_cut, min_tau=min_tau, max_tau=max_tau)
-    cv, sd = pa.amp_analysis(imgs[:, use_xy[0], use_xy[1]], int(60 / dt * 24))
+    cv, sd = pa.amp_analysis(imgs[:, use_xy[0], use_xy[1]], int(60 / dt * 24 * 3))
     ###############################
     # 出力
     ###############################
@@ -288,7 +288,7 @@ if __name__ == "__main__":
     #########################
     # パラメータ
     #########################
-    folder = os.path.join('00data', '170613-LD2LL-ito-MVX', 'frond_180730', 'label-001_239-188_n214', 'small_moved_mask_frond_lum')
-    save = os.path.join('_181120', 'test')
+    folder = os.path.join('00data', 'nakamura_mask')
+    save = os.path.join('result', 'nakamura')
 
-    img_pixel_theta(folder, avg=3, mesh=1, dt=60, offset=0, p_range=12, f_avg=1, f_range=5, save=save, make_color=[22, 28], xlsx=True)
+    img_pixel_theta(folder, avg=3, mesh=1, dt=20, offset=0, p_range=12, f_avg=1, f_range=5, save=save, make_color=[22, 28], xlsx=True)

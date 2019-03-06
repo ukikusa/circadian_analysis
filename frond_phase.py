@@ -5,7 +5,7 @@
 import os
 import sys
 # ディレクトリを import の探索パスに追加
-sys.path.append('/hdd1/Users/kenya/Labo/keisan/python_sorce/analyser')
+sys.path.append('/hdd1/Users/kenya/Labo/keisan/python_sorce/circadian_analysis/analyser')
 from phase_from_img import img_pixel_theta
 
 
@@ -15,7 +15,7 @@ os.chdir(os.path.join('/hdd1', 'Users', 'kenya', 'Labo', 'keisan', 'python'))
 # パラメータ
 #########################
 folder = os.path.join('00data', '170613-LD2LL-ito-MVX', 'frond_180730', 'label-001_239-188_n214', 'small_moved_mask_frond_lum')  # 入力(画像の入ったフォルダ)を指定する．
-save = os.path.join('_190124', 'test')  # 出力先を指定する．
+save = os.path.join('result', 'LDLL-170613-label1')  # 出力先を指定する．
 # save = True  # 自動命名で保存．
 dt = 60  # 何分間隔で撮影したかを指定．
 
