@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 '''fft_nllsをする．標準化には不偏標準偏差を使う'''
 
+import cos_models
 import numpy as np
 import os
 import glob
+from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
-import image_analysis as im
-import peak_analysis as pa
 import pandas as pd
 import scipy as sp
 from scipy.optimize import curve_fit
@@ -72,6 +72,8 @@ def fft_peak(data, s=0, e=24 * 3, dt=60, pdf_plot=False):
     data = data[int(s / dt_h):int(e / dt_h) + 1]  # FFTに使うデータだけ．
     n = data.shape[0]
     time = np.arange(s, e + dt_h, dt_h)
+    time = time - s
+    print(time)
     # f = 1/dt_h*np.arange(int(n/2))/n  # 1時間あたりの頻度
     f = np.linspace(0, 1.0 / dt_h, n)
     # FFTアルゴリズム(CT)で一次元のn点離散フーリエ変換（DFT）
@@ -88,63 +90,108 @@ def fft_peak(data, s=0, e=24 * 3, dt=60, pdf_plot=False):
     fft_df['f'] = f[fft_point[0]]
     # fft_df['per'] = np.mod(np.angle(fft_data)[fft_point]+2*np.pi, 2*np.pi) 
     # 複素数なので位相が出る
-    fft_df['pha'] = np.angle(fft_data)[fft_point]/np.pi
+    fft_df['pha'] = np.angle(fft_data)[fft_point]
     # 複素数なので位相が出る
     fft_df = fft_df.sort_values(by=['sample', 'amp'], ascending=[True, False])
-    if pdf_plot is not False:
-        fig = plt.figure(figsize=(6, 4), dpi=100)
-        plt.plot(f, P1[:, 0])
-        # plt.plot( 1/dt_h*np.arange(int(n))/n, P2[:, 0])
-        plt.show()
-        plt.clf()
-        plt.plot(time, phase_fft)
-        plt.show()
-        plt.clf()
-    print(fft_df)
     return fft_df, time, data
 
 
-def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30]):
+def start_plot(save_path, size_x=11.69, size_y=8.27):
+    """A function that plots multiple graphs on one page."""
+    # 文字サイズとかの設定
+    plt.rcParams['font.size'] = 5
+    plt.rcParams['font.family'] = 'sans-serif'
+    if os.path.exists(os.path.dirname(save_path)) is False and os.path.dirname(save_path) != '':
+        os.makedirs(os.path.dirname(save_path))
+    print('pdf作成を開始します')
+    pp = PdfPages(save_path)
+    fig = plt.figure(figsize=(size_x, size_y), dpi=100)
+    ax = []
+    return pp, fig, ax
+
+
+def pdf_save(pp):
+    plt.tight_layout()  # レイアウト
+    plt.savefig(pp, format='pdf')
+    plt.clf()
+
+
+def fit_plot(pp, fig, ax, i, x, y, func, y_min=None, y_max=None, plt_x=5, plt_y=4, title=False):
+    # 1pageに対して，配置する graf の数．配置する graf の場所を指定．
+    plt_n = plt_x * plt_y  # 一つのグラフへのプロット数
+    i_mod = i % plt_n
+    ax.append(fig.add_subplot(plt_x, plt_y, i_mod + 1))
+    # プロット
+    ax[i_mod].plot(x, y, linewidth=0, marker='.')
+    # 軸の調整とか
+    ax[i_mod].set_xlim(x[0], x[-1])  # x軸
+    ax[i_mod].set_ylim(y_min, y_max)  # y軸
+    ax[i_mod].set_xticks(np.arange(x[0], x[-1], 24))  # メモリ
+    ax[i_mod].grid(which='major', axis='x', color='k', linestyle='dotted', lw=0.5)  # 縦の補助線
+    ax[i_mod].set_title(title)
+    ax[i_mod].tick_params(labelbottom=True, labelleft=True, labelsize=5)
+
+    ###################
+    # fittingのプロット
+    ###################
+    per_n = str(int(func.size/3))
+    ax[i_mod].plot(x, eval("cos_models.cos_model_" + per_n + "(x, *func)"), '-r', lw=1)
+    if np.mod(i, plt_n) == plt_n - 1:
+        pdf_save(pp)
+        ax = []
+    return ax
+
+
+def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf = False):
 
     result_df = pd.DataFrame(index=[list(range(data.shape[1]))], columns=['amp', 'tau', 'pha', 'rae'])
     dt_h = dt / 60
     fft_df, time, data = fft_peak(data, s=s, e=e, dt=dt, pdf_plot=pdf_plot)
     fft_df = fft_df.rename(columns={'f': 'tau'})
     fft_df['tau'] = 1 / fft_df['tau']
-
-    def cos_model(time, amp, tau, pha, offset):  # fittingのモデル
-        return amp * np.cos(2 * np.pi * (time / tau) + np.pi * pha) + offset
+    if pdf is not False:
+        pp, fig, ax = start_plot(pdf, size_x=11.69, size_y=8.27)
+        plt_x, plt_y=5, 4
+        plt_n = plt_x * plt_y
     for i in np.unique(fft_df['sample']):  # data毎にループ
-        result = []
-        perr = []
+        p0, result, perr = [], [], []
         data_i, fft_df_i = data[:, i], fft_df[fft_df['sample'] == i].reset_index(drop=True)
+        p0 = []
         for j in range(len(fft_df_i['sample'])):  # 推定した周期毎にフィッティング
-            p0 = np.array([fft_df_i['amp'][j], fft_df_i['tau'][j], fft_df_i['pha'][j], np.average(data_i)])  # fftで求めた初期値を用いる
+            p0 = np.hstack([p0, fft_df_i['amp'][j], fft_df_i['tau'][j], fft_df_i['pha'][j]])  # fftで求めた初期値を用いる
             try:
-                result_t, pcov = sp.optimize.curve_fit(cos_model, time, data_i, p0=p0)  # , bounds=[[0, np.inf]]) # fitting
-                perr.append(list(np.sqrt(np.diag(pcov))))  # 標準偏差
-                data_i = data_i - cos_model(time, result_t[0], result_t[1], result_t[2], result_t[3])
-                # fitting結果を引く．
-                result.append(result_t)  # 結果
+                res, pcov = sp.optimize.curve_fit(eval("cos_models.cos_model_" + str(j+1)), time, data_i, p0=p0, ftol=1e-05)
+                per = np.sqrt(np.diag(pcov))  # 標準偏差
             except:
                 print('tol = ではerrerが出てるよ')
                 break
-            # if np.min(np.abs(np.array(result)[:,0]/result_t[0]))<1: # 振幅が前の結果より大きなったらsそこまで
-            #   break
-        result, perr = np.array(result), np.array(perr)
+            p0[:len(res)] = res
+            res = res.reshape([-1,3])
+            per = per.reshape([-1,3])
+            # 振幅のSDが振幅を超えたらだめ
+            if np.min(np.abs(res[:,0]/per[:, 0]))<1:break
+            else:
+                result = res
+                perr = per
+        print(i)
         perr = perr[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
         result = result[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
-        result[result[:, 0] < 0, 2] = np.pi - result[result[:, 0] < 0, 2]
+        result[result[:, 2] < 0, 2] = 2 * np.pi + result[result[:, 2] < 0, 2]
         result[result[:, 0] < 0, 0] = -result[result[:, 0] < 0, 0]
 
-        try:
+        if result != []:
+            # RAEを求める．これでいいのだろうか
             UL = sp.stats.norm.interval(loc=result[0, 0], scale=perr[0, 0], alpha=0.95)
-        except:
-                break
-        result_df['rae'][i] = np.diff(UL) / result[0, 0] / 2
-        result_df['amp'][i] = result[0, 0]
-        result_df['tau'][i] = result[0, 1]
-        result_df['pha'][i] = result[0, 2]
+            result_df['rae'][i] = np.diff(UL) / result[0, 0]
+            result_df['amp'][i] = result[0, 0]
+            result_df['tau'][i] = result[0, 1]
+            result_df['pha'][i] = result[0, 2]/np.pi/2*(-1) + 1
+            if pdf is not False:
+                ax = fit_plot(pp, fig, ax, i, time, data_i, result.flatten(), y_min=None, y_max=None, plt_x=plt_x, plt_y=plt_y, title=i)
+    if np.mod(i, plt_n) != plt_n - 1:
+        pdf_save(pp)
+        plt.clf()
+        pp.close()
     return result_df
 
 if __name__ == '__main__':
@@ -154,9 +201,10 @@ if __name__ == '__main__':
     data_path = os.path.join('TimeSeries.txt')  # 解析データのパス
     df = pd.read_table(data_path)
     data = df.values
+
     data_det, data_det_ampnorm = data_norm(data, dt=20)
 
     np.savetxt("tmp.csv", data_det_ampnorm, delimiter=",")
-    a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40])
+    a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf = 'tmp.pdf')
     print(a)
     a.to_csv("tmp.csv")
