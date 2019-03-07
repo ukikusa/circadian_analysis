@@ -12,60 +12,86 @@ import numpy as np
 import scipy.stats
 
 
+def start_plot(save_path, size_x=11.69, size_y=8.27):
+    ''' start plot
+
+    plot for malti page
+
+    Args:
+        save_path: [description]
+        size_x: [description] (default: {11.69})
+        size_y: [description] (default: {8.27})
+
+    Returns:
+        pp, fig, ax=[]
+    '''
+    # 文字サイズとかの設定
+    plt.rcParams['font.size'] = 5
+    plt.rcParams['font.family'] = 'sans-serif'
+    if os.path.exists(os.path.dirname(save_path)) is False and os.path.dirname(save_path) != '':
+        os.makedirs(os.path.dirname(save_path))
+    print('pdf作成を開始します')
+    pp = PdfPages(save_path)
+    fig = plt.figure(figsize=(size_x, size_y), dpi=100)
+    ax = []
+    return pp, fig, ax
+
+
+def pdf_save(pp):
+    plt.tight_layout()  # レイアウト
+    plt.savefig(pp, format='pdf')
+    plt.clf()
+
+
 def multi_plot(x, y, save_path, peak=False, func=False, r=False, label=False, y_min=0, y_max=None, plt_x=5, plt_y=4, size_x=11.69, size_y=8.27):
     """A function that plots multiple graphs on one page."""
     # yはたくさんある前提.
     # peakを中心に前後rでフィティングをしたとする．
     # 28個の時系列折れ線グラフを一つのPDFファイルとして出力する．
+    pp, fig, ax = start_plot(save_path, size_x=11.69, size_y=8.27)
     plt_n = plt_x * plt_y  # 一つのグラフへのプロット数
-    # 文字サイズとかの設定
-    plt.rcParams['font.size'] = 5
-    plt.rcParams['font.family'] = 'sans-serif'
-    # if os.path.exists(save_path) is False:
-    #     os.makedirs(save_folder)
-    #     print(save_folder+'を作成しました')
+
     if label is False:
         label = np.empty(y.shape[1])
         label[:] = False
-    print('pdf作成を開始します')
-    pp = PdfPages(save_path)
-    fig = plt.figure(figsize=(size_x, size_y), dpi=100)
-    ax = []
+
     ###############
     # pdfの保存関数 ここから
     ##############
 
-    def pdf_save(pp):
-        plt.tight_layout()  # レイアウト
-        plt.savefig(pp, format='pdf')
-        plt.clf()
-    ###############
-    # ループ
-    ##############
+
+    def plot_data(fig, ax, x, y, y_min=y_min, plt_x=plt_x, plt_y=plt_y, i=0, label=False):
+        print(ax)
+        ax.append(fig.add_subplot(plt_x, plt_y, i + 1))
+        # プロット
+        ax[i].plot(x, y, linewidth=0, marker='.')
+        # 軸の調整とか
+        ax[i].set_xlim(left=0)  # x軸
+        ax[i].set_ylim(y_min, y_max)  # y軸
+        ax[i].set_xticks(np.arange(0, x[-1], 24) - x[0])  # メモリ
+        ax[i].grid(which='major', axis='x', color='k', linestyle='dotted', lw=0.5)  # 縦の補助線
+        ax[i].set_title(label)
+        ax[i].tick_params(labelbottom=True, labelleft=True, labelsize=5)
+        return fig, ax
+
+    def plot_peak_fit(ax, x, peak, func, r, i=0, label=False):
+        peak = peak[~np.isnan(peak)]
+        for count, j in enumerate(peak):
+            ax[i].plot(x[int(j - r):int(j + r)], np.poly1d(func[count])(x[int(j - r): int(j + r)]), '-r', lw=1)
+        return ax
+    ##########
+    # ループ #
+    ##########
     for i in range(y.shape[1]):
         # 1pageに対して，配置する graf の数．配置する graf の場所を指定．
         i_mod = i % plt_n
-        ax.append(fig.add_subplot(plt_x, plt_y, i_mod + 1))
-        # プロット
-        ax[i_mod].plot(x, y[:, i], linewidth=0, marker='.')
-        # 軸の調整とか
-        ax[i_mod].set_xlim(left=0)  # x軸
-        ax[i_mod].set_ylim(y_min, y_max)  # y軸
-        ax[i_mod].set_xticks(np.arange(0, x[-1], 24) - x[0])  # メモリ
-        ax[i_mod].grid(which='major', axis='x', color='k',
-                       linestyle='dotted', lw=0.5)  # 縦の補助線
-        ax[i_mod].set_title(label[i])
-        ax[i_mod].tick_params(labelbottom=True, labelleft=True, labelsize=5)
-
-        #############
-        # fittingのプロット
-        #################
+        fig, ax = plot_data(fig, ax, x, y=y[:, i], y_min=y_min, plt_x=plt_x, plt_y=plt_y, i=i_mod, label=label[i])
+        print(i)
+        #####################
+        # fittingのプロット #
+        #####################
         if peak is not False:
-            peak_i = peak[:, i]
-            peak_i = peak_i[~np.isnan(peak_i)]
-            for count, j in enumerate(peak_i):
-                ax[i_mod].plot(x[int(j - r):int(j + r)], np.poly1d(func[count, i])
-                               (x[int(j - r): int(j + r)]), '-r', lw=1)
+            ax = plot_peak_fit(ax, x, peak[:, i], func[:, i], r, i=i_mod, label=False)
         #############
         # pdfの保存
         #################

@@ -19,4 +19,4 @@ save = os.path.join('result', 'nakamura')  # 出力先を指定する．
 # save = True  # 自動命名で保存．
 dt = 60  # 何分間隔で撮影したかを指定．
 
-img_pixel_theta(folder, avg=5, dt=dt, mesh=5, offset=0, p_range=7, f_avg=5, f_range=6, save=save, make_color=[22, 28], xlsx=True, pdf=True, distance_center=True, r2_cut=0.5)
+img_pixel_theta(folder, avg=5, dt=dt, mesh=5, offset=0, p_range=7, f_avg=5, f_range=6, save=save, make_color=[20, 30], xlsx=True, pdf=True, distance_center=True, r2_cut=0.0)
