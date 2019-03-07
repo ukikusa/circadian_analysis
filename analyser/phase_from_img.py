@@ -217,9 +217,9 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
         else:
             mask = False
     else:
-        imgs = im.mesh_img(folder, mesh)
+        imgs = im.mesh_imgs(folder, mesh)
         if mask_folder is not False:
-            mask = im.mesh_img(mask_folder, mesh)
+            mask = im.mesh_imgs(mask_folder, mesh)
         else:
             mask = False
     ##################################
