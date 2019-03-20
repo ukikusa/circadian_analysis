@@ -5,7 +5,7 @@ import numpy as np
 import os
 import glob
 import matplotlib.pyplot as plt
-import image_analysis as im
+import ..rythm_analyser.image_analysis as im
 import peak_analysis as pa
 import pandas as pd
 import scipy as sp
