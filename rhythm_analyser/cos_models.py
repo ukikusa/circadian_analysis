@@ -16,6 +16,7 @@ np.set_printoptions(precision=5, floatmode='fixed', suppress=True)
 def cos_model(time, amp, tau, pha):  # fittingのモデル
     return amp * np.cos(2 * np.pi * (time / tau) + pha)
 
+
 def cos_model_1(time, amp0, tau0, pha0):
     fit = 0
     for i in range(1):
@@ -92,14 +93,30 @@ def cos_model_11(time, amp0, tau0, pha0, amp1, tau1, pha1, amp2, tau2, pha2, amp
         fit = fit + cos_model(time, eval("amp" + str(i)), eval("tau" + str(i)), eval("pha" + str(i)))
     return fit
 
+
 def cos_model_12(time, amp0, tau0, pha0, amp1, tau1, pha1, amp2, tau2, pha2, amp3, tau3, pha3, amp4, tau4, pha4, amp5, tau5, pha5, amp6, tau6, pha6, amp7, tau7, pha7, amp8, tau8, pha8, amp9, tau9, pha9, amp10, tau10, pha10, amp11, tau11, pha11):
     fit = 0
-    for i in range(11):
+    for i in range(12):
         fit = fit + cos_model(time, eval("amp" + str(i)), eval("tau" + str(i)), eval("pha" + str(i)))
     return fit
 
+
 def cos_model_13(time, amp0, tau0, pha0, amp1, tau1, pha1, amp2, tau2, pha2, amp3, tau3, pha3, amp4, tau4, pha4, amp5, tau5, pha5, amp6, tau6, pha6, amp7, tau7, pha7, amp8, tau8, pha8, amp9, tau9, pha9, amp10, tau10, pha10, amp11, tau11, pha11, amp12, tau12, pha12):
     fit = 0
-    for i in range(11):
+    for i in range(13):
+        fit = fit + cos_model(time, eval("amp" + str(i)), eval("tau" + str(i)), eval("pha" + str(i)))
+    return fit
+
+
+def cos_model_14(time, amp0, tau0, pha0, amp1, tau1, pha1, amp2, tau2, pha2, amp3, tau3, pha3, amp4, tau4, pha4, amp5, tau5, pha5, amp6, tau6, pha6, amp7, tau7, pha7, amp8, tau8, pha8, amp9, tau9, pha9, amp10, tau10, pha10, amp11, tau11, pha11, amp12, tau12, pha12, amp13, tau13, pha13):
+    fit = 0
+    for i in range(14):
+        fit = fit + cos_model(time, eval("amp" + str(i)), eval("tau" + str(i)), eval("pha" + str(i)))
+    return fit
+
+
+def cos_model_15(time, amp0, tau0, pha0, amp1, tau1, pha1, amp2, tau2, pha2, amp3, tau3, pha3, amp4, tau4, pha4, amp5, tau5, pha5, amp6, tau6, pha6, amp7, tau7, pha7, amp8, tau8, pha8, amp9, tau9, pha9, amp10, tau10, pha10, amp11, tau11, pha11, amp12, tau12, pha12, amp13, tau13, pha13, amp14, tau14, pha14):
+    fit = 0
+    for i in range(15):
         fit = fit + cos_model(time, eval("amp" + str(i)), eval("tau" + str(i)), eval("pha" + str(i)))
     return fit
