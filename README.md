@@ -23,10 +23,10 @@ library: `requirements.txt` 参照
   ~~https://qiita.com/ykawakami/items/4bae371932110b2e25e3~~  
   ~~設定済みのVertual box を渡すことも可能です．~~  
   Windows Subsystem for Linuxを使ってください．  
-  http://www.aise.ics.saitama-u.ac.jp/~gotoh/UbuntuOnWSL.html
+  [参考](http://www.aise.ics.saitama-u.ac.jp/~gotoh/UbuntuOnWSL.html)  
   Xサーバも入れる必要があります．  
-  僕は[VcXsrv Windows X Server](https://sourceforge.net/projects/vcxsrv/)を入れました．
-  https://qiita.com/optman/items/345df0d4d9188d4d0f90 
+  僕は[VcXsrv Windows X Server](https://sourceforge.net/projects/vcxsrv/)を入れました．  
+  [参考](https://qiita.com/optman/items/345df0d4d9188d4d0f90)
     
  </details>>
 ライブラリのインストール (-pipは各自パスを入れてください．)
