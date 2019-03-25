@@ -119,6 +119,33 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1):
     return calc_imgs, warps, roop
 
 
+def imgs_transformECC_warp(move_imgs, warps):
+    """Function to move images from the movement matrix.
+
+    Args:
+        move_imgs:
+        warps: _, warps, _ = imgs_transformECC_ver2
+        motionType: [0: tanslation, 1:Euclidean, 2:affine, 3:homography] (default: {1})
+
+    Returns:
+        move_imgs:
+    """
+    tmp = np.sum(calc_imgs, axis=(1, 2))
+    roop = np.where(tmp != 0)[0]
+    for i in roop:  # 全部黒ならする必要ない．
+        move_imgs[i] = cv2.warpAffine(move_imgs[i], warps[i], move_imgs.shape[1:], flags=cv2.INTER_NEAREST)
+    return move_imgs
+
+
+def imgs_transformECC_all(calc_imgs, motionType=1, *other_imgs):
+    calc_imgs, warps, _ = imgs_transformECC_ver2(calc_imgs, motionType=motionType)
+    for i in range(len(other_imgs)):
+        other_imgs[i] = imgs_transformECC_warp(other_imgs[i], motionType=motionType)
+    return calc_imgs, warps, other_imgs
+
+# To do
+# warps = cv2.invertAffineTransform(warps) で逆行列が求まるのでもとに戻せる．
+
 if __name__ == '__main__':
     os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python", "00data"))
     # 処理したいデータのフォルダ
@@ -135,6 +162,7 @@ if __name__ == '__main__':
             lum_img = im.read_imgs(i + '/frond_lum')
             trance.at[i, 'first'] = np.sum(calc_imgs[0] != 0)
             trance.at[i, 'last'] = np.sum(calc_imgs[-1] != 0)
+            imgs_transformECC_all(calc_imgs, 1)
             move_img, warps, roops = imgs_transformECC_ver2(calc_imgs)
             trance.at[i, 'ECC_moved_2'] = np.sum((move_img[0] != 0) != (move_img[-1] != 0)) / (np.sum(move_img[-1] != 0)) * 0.5
             # np.save(i + '/warps.npy', warps)
