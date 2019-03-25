@@ -1,33 +1,29 @@
 # -*- coding: utf-8 -*-
-
+"""Function to correct front movement."""
 
 import glob
-import itertools
 import os
-import sys
 
 import cv2
-
+import image_analysis as im
 import matplotlib.pyplot as plt
-
 import numpy as np
-
 import pandas as pd
 
 
 def img_transformECC(tmp_img, new_img, motionType=1):
-    '''Estimate rotation matrix by transformECC.
-    
+    """Estimate rotation matrix by transformECC.
+
     Args:
         tmp_img: Template image
         new_img: Moving image
         motionType: [0: tanslation, 1:Euclidean, 2:affine, 3:homography] (default: {1})
         centroid: [description] (default: {[0,0]})
-    
+
     Returns:
         [description]
         [type]
-    '''
+    """
     if np.max(tmp_img) > 255 or np.max(new_img) > 255:
         tmp_img = im.bit1628(tmp_img)
         new_img = im.bit1628(new_img)
@@ -50,7 +46,7 @@ def img_transformECC(tmp_img, new_img, motionType=1):
 
 
 def imgs_transformECC(calc_img, centroids=False, motionType=1):
-    # 移動補正をまとめた．
+    """移動補正をまとめた．"""
     warps = np.zeros((calc_img.shape[0] - 1, 2, 3), dtype=np.float32)
     warps[:, 0, 0], warps[:, 1, 1] = 1, 1
     if centroids is False:
@@ -66,30 +62,61 @@ def imgs_transformECC(calc_img, centroids=False, motionType=1):
 
 
 def imgs_transformECC_ver2(calc_imgs, motionType=1):
-    '''Motion correction based on a specific image.
-    
+    """Motion correction based on a specific image.
+
     Args:
-        calc_img: [description]
-        centroids: [description] (default: {False})
-        motionType: [description] (default: {1})
-    
+        calc_imgs: [description]
+        motionType: [0: tanslation, 1:Euclidean, 2:affine, 3:homography] (default: {1})
+
     Returns:
         [description]
         [type]
-    '''
+    """
     # 移動補正をまとめた．
-    warps = np.zeros((calc_imgs.shape[0] - 1, 2, 3), dtype=np.float32)
+    warps = np.zeros((calc_imgs.shape[0], 2, 3), dtype=np.float32)
     warps[:, 0, 0], warps[:, 1, 1] = 1, 1
-    tmp = np.max(calc_imgs, axis=(1, 2))
-    roop = np.where((tmp[:-1]*tmp[1:]) != 0)[0]
+    tmp = np.sum(calc_imgs, axis=(1, 2))
+    roop = np.where(tmp != 0)[0]
+    tmp_idx = np.argmax(tmp)
+
+    def rotation_reference_image(img):
+        """Specify the direction of the frond after rotation."""
+        img = img.astype(np.uint8)
+        imgEdge, contours, hierarchy = cv2.findContours(img, 1, 2)
+        w, h, angle = cv2.fitEllipse(contours[0])  # 楕円に近似
+        center = tuple((np.array(img.shape) / 2).astype(np.uint8))
+
+        def rotation_by_angle(img, center, angle):
+            warp = cv2.getRotationMatrix2D(center, angle, 1)  # 回転行列を求める
+            out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
+            print("\n---------------------------\n" + str(angle) + "度回転しました．\n良ければ0\n上下を反転させたければ1\n自分で回転角度を指定する場合は2を入力してください．")
+            plt.imshow(out)
+            plt.gray()
+            plt.ion()
+            plt.show()
+            a = int(input())
+            if a == 1:
+                warp = cv2.getRotationMatrix2D(center, angle + 180, 1)  # 回転行列を求める
+                out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
+            return out, a
+
+        out, a = rotation_by_angle(img, center, angle)
+        while a == 2:
+            print("回転したい角度を入力してください．\n")
+            angle = float(input())
+            plt.close()
+            out, a = rotation_by_angle(img, center, angle)
+        plt.close()
+        return out
+
+    tmp_img = rotation_reference_image(calc_imgs[tmp_idx])
     try_r = 0
-    tmp_img = calc_imgs[0]
     for i in roop:  # 全部黒ならする必要ない．
         if try_r == 1:  # 直前の画像が移動補正に失敗した場合
-            calc_imgs[i + 1][np.nonzero(calc_imgs[i + 1])] = np.max(calc_imgs[i])
-            tmp_img = calc_imgs[i]
-        calc_imgs[i + 1], warps[i], try_r = img_transformECC(tmp_img, calc_imgs[i + 1], motionType=motionType)
-    return calc_img, warps, roop
+            calc_imgs[i][np.nonzero(calc_imgs[i])] = np.max(calc_imgs[i - 1])
+            tmp_img[np.nonzero(tmp_img)] = calc_imgs[i - 1]
+        calc_imgs[i], warps[i], try_r = img_transformECC(tmp_img, calc_imgs[i], motionType=motionType)
+    return calc_imgs, warps, roop
 
 
 if __name__ == '__main__':
@@ -103,26 +130,13 @@ if __name__ == '__main__':
         trance = pd.DataFrame(index=[], columns=['first'])
         for i in folder_list:
             print(i)
-            calc_img = im.read_imgs(i + '/mask_frond')
-            centroids = np.loadtxt(os.path.join(i, "centroids.csv"), delimiter=",")
+            calc_imgs = im.read_imgs(i + '/mask_frond')
             mask_lum_img = im.read_imgs(i + '/mask_frond_lum')
             lum_img = im.read_imgs(i + '/frond_lum')
-            trance.at[i, 'first'] = np.sum(calc_img[0] != 0)
-            trance.at[i, 'last'] = np.sum(calc_img[-1] != 0)
-
-            print('ECC')
-            move_img, warps, roops = imgs_transformECC(calc_img)
-            trance.at[i, 'ECC_moved'] = np.sum((move_img[0]!=0) != (move_img[-1]!=0))/(np.sum(move_img[-1] != 0))*0.5
-
-            ############### ECCver2 ################
-            print('ECC')
-            move_img, warps, roops = imgs_transformECC_ver2(calc_img)
-            trance.at[i, 'ECC_moved_2'] = np.sum((move_img[0]!=0) != (move_img[-1]!=0))/(np.sum(move_img[-1] != 0))*0.5
-            ############## ECCと重心 #################
-            # print('ECCと重')
-            # move_img, warps, roops = imgs_transformECC(calc_img, centroids=centroids)
-            # trance.at[i, 'cg_move'] = np.sum(move_img[0] != move_img[-1])/(np.sum(move_img[-1] != 0))*0.5
-            imgs = img_transform(warps, roops, mask_lum_img, lum_img)
+            trance.at[i, 'first'] = np.sum(calc_imgs[0] != 0)
+            trance.at[i, 'last'] = np.sum(calc_imgs[-1] != 0)
+            move_img, warps, roops = imgs_transformECC_ver2(calc_imgs)
+            trance.at[i, 'ECC_moved_2'] = np.sum((move_img[0] != 0) != (move_img[-1] != 0)) / (np.sum(move_img[-1] != 0)) * 0.5
             # np.save(i + '/warps.npy', warps)
             # warps.resize(((calc_img.shape[0] - 1), 3))
             # np.savetxt(i + '/warps.csv', warps, delimiter=',')
