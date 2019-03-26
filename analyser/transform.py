@@ -3,12 +3,50 @@
 
 import glob
 import os
+import tkinter as tk
 
 import cv2
 import image_analysis as im
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from PIL import Image, ImageTk
+
+
+class CheckRotationGui:
+    """回転確認のダイアルボックスを出す"""
+
+    def __init__(self, img, angle):
+        """a."""
+        self.angle = angle
+        self.img = img
+        self.a = ''
+
+    def radiobutton_box(self):
+        """a."""
+        tki = tk.Tk()
+        tki.geometry()
+        tki.title("フロンド回転の確認")
+        img = Image.fromarray(self.img, "L")
+        img = ImageTk.PhotoImage(img)
+        tk.Label(image=img, text=str(self.angle) + "度回転しました．いずれかを選択してください", compound="top").pack(side="top")
+        var = tk.IntVar()  # チェックの有無変数
+        rdo_box = ["これで良い", "上下を反転させる", "回転角度を指定する"]
+        var.set(0)
+        for i in range(len(rdo_box)):
+            tk.Radiobutton(tki, value=i, variable=var, text=rdo_box[i]).pack(side="top", anchor="w")
+        tk.Label(text="回転させる角度").pack(side="left", anchor="w")
+        txt = tk.Entry(width=20)
+        txt.pack(side="left", anchor="w")
+
+        def ok_btn():
+            self.a = var.get()
+            if self.a == 2:
+                self.angle = int(txt.get())
+            tki.destroy()
+
+        tk.Button(tki, text='OK', command=ok_btn).pack(side="bottom")
+        tki.mainloop()
+        return self.a, self.angle
 
 
 def img_transformECC(tmp_img, new_img, motionType=1):
@@ -89,24 +127,17 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1):
         def rotation_by_angle(img, center, angle):
             warp = cv2.getRotationMatrix2D(center, angle, 1)  # 回転行列を求める
             out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
-            print("\n---------------------------\n" + str(angle) + "度回転しました．\n良ければ0\n上下を反転させたければ1\n自分で回転角度を指定する場合は2を入力してください．")
-            plt.imshow(out)
-            plt.gray()
-            plt.ion()
-            plt.show()
-            a = int(input())
+            check = CheckRotationGui(out, angle)
+            a, angle = check.radiobutton_box()
+            # print(check.a, check.angle)
+            # a, angle = check.a, check.angle
             if a == 1:
                 warp = cv2.getRotationMatrix2D(center, angle + 180, 1)  # 回転行列を求める
                 out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
-            return out, a
-
-        out, a = rotation_by_angle(img, center, angle)
+            return out, a, angle
+        a = 2
         while a == 2:
-            print("回転したい角度を入力してください．\n")
-            angle = float(input())
-            plt.close()
-            out, a = rotation_by_angle(img, center, angle)
-        plt.close()
+            out, a, angle = rotation_by_angle(img, center, angle)
         return out
 
     tmp_img = rotation_reference_image(calc_imgs[tmp_idx])
@@ -130,7 +161,7 @@ def imgs_transformECC_warp(move_imgs, warps):
     Returns:
         move_imgs:
     """
-    tmp = np.sum(calc_imgs, axis=(1, 2))
+    tmp = np.sum(move_imgs, axis=(1, 2))
     roop = np.where(tmp != 0)[0]
     for i in roop:  # 全部黒ならする必要ない．
         move_imgs[i] = cv2.warpAffine(move_imgs[i], warps[i], move_imgs.shape[1:], flags=cv2.INTER_NEAREST)
@@ -138,13 +169,30 @@ def imgs_transformECC_warp(move_imgs, warps):
 
 
 def imgs_transformECC_all(calc_imgs, motionType=1, *other_imgs):
+    """a."""
     calc_imgs, warps, _ = imgs_transformECC_ver2(calc_imgs, motionType=motionType)
     for i in range(len(other_imgs)):
-        other_imgs[i] = imgs_transformECC_warp(other_imgs[i], motionType=motionType)
+        other_imgs[i] = imgs_transformECC_warp(other_imgs[i], warps=warps)
     return calc_imgs, warps, other_imgs
 
-# To do
-# warps = cv2.invertAffineTransform(warps) で逆行列が求まるのでもとに戻せる．
+
+def frond_transform(parent_directory, calc_folder="mask_frond", other_folder_list=["mask_frond_lum", 'frond'], motionType=1):
+    """移動補正を一括化
+
+    Args:
+        parent_directory: [description]
+        calc_folder: [description] (default: {"mask_frond"})
+        other_folder_list: [description] (default: {["mask_frond_lum", 'frond']})
+        motionType: [description] (default: {1})
+    """
+    calc_imgs = im.read_imgs(os.path.join(parent_directory, calc_folder))
+    move_img, warps, roops = imgs_transformECC_ver2(calc_imgs)
+    im.save_imgs(os.path.join(parent_directory, "moved_" + calc_folder), calc_imgs)
+    for i in other_folder_list:
+        other_imgs = im.read_imgs(os.path.join(parent_directory, i))
+        other_imgs = imgs_transformECC_warp(other_imgs, warps=warps)
+        im.save_imgs(os.path.join(parent_directory, "moved_" + i), other_imgs)
+    np.save(os.path.join(parent_directory, 'warps.npy'), warps)
 
 if __name__ == '__main__':
     os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python", "00data"))
@@ -156,19 +204,5 @@ if __name__ == '__main__':
         folder_list = sorted(glob.glob(frond_folder + '/*'))
         trance = pd.DataFrame(index=[], columns=['first'])
         for i in folder_list:
-            print(i)
-            calc_imgs = im.read_imgs(i + '/mask_frond')
-            mask_lum_img = im.read_imgs(i + '/mask_frond_lum')
-            lum_img = im.read_imgs(i + '/frond_lum')
-            trance.at[i, 'first'] = np.sum(calc_imgs[0] != 0)
-            trance.at[i, 'last'] = np.sum(calc_imgs[-1] != 0)
-            imgs_transformECC_all(calc_imgs, 1)
-            move_img, warps, roops = imgs_transformECC_ver2(calc_imgs)
-            trance.at[i, 'ECC_moved_2'] = np.sum((move_img[0] != 0) != (move_img[-1] != 0)) / (np.sum(move_img[-1] != 0)) * 0.5
-            # np.save(i + '/warps.npy', warps)
-            # warps.resize(((calc_img.shape[0] - 1), 3))
-            # np.savetxt(i + '/warps.csv', warps, delimiter=',')
-            # im.save_imgs(i + '/moved_mask_frond', move_img)
-            # im.save_imgs(i + '/moved_mask_frond_lum', imgs[0])
-            # im.save_imgs(i + '/moved_frond_lum', imgs[1])
+            frond_transform(parent_directory=i, calc_folder="mask_frond", other_folder_list=["mask_frond_lum", 'frond'], motionType=1)
         trance.to_csv(os.path.join(day, 'tranc.csv'))
