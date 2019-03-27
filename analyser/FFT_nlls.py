@@ -1,29 +1,28 @@
 # -*- coding: utf-8 -*-
-'''fft_nllsをする．標準化には不偏標準偏差を使う'''
+"""fft_nllsをする．標準化には不偏標準偏差を使う"""
+
+import os
 
 import cos_models
-import numpy as np
-import os
-import glob
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import scipy as sp
-from scipy.optimize import curve_fit
 np.set_printoptions(precision=5, floatmode='fixed', suppress=True)
 
 
 def data_trend(data, w):  # wはdata数
-    '''trandを求める
-    
+    """trandを求める
+
     Args:
         data: 列ごとに時系列データが入っているnumpy
         w: trandを取る範囲のデータ数．偶数なら+1する
-    
+
     Returns:
         average, sd
         numpy np.float64
-    '''
+    """
     if w % 2 == 0:
         w = w + 1
     w2 = int(np.floor(w / 2))
@@ -31,8 +30,8 @@ def data_trend(data, w):  # wはdata数
     ws = ws - w2  # index 最初
     we = ws + w  # index 最後
     # 指定範囲が取れない場合は取れる範囲で取る
-    ws[ws<0] = 0
-    we[we>data.shape[0]] = data.shape[0]
+    ws[ws < 0] = 0
+    we[we > data.shape[0]] = data.shape[0]
     move_sd = np.empty_like(data).astype(np.float64)
     move_avg = np.empty_like(move_sd)
     for i in range(data.shape[0]):
@@ -45,29 +44,29 @@ def data_norm(data, dt=60):
     # 24hでのdataのtrendを除去するversion
     data_avg, data_sd = data_trend(data, w=int(24 * 60 / dt))
     data_det = data - data_avg
-    data_det_ampnorm = data_det/data_sd
-    data_ampindex = data_sd/data_avg
+    data_det_ampnorm = data_det / data_sd
+    data_ampindex = data_sd / data_avg
 
     # normalize 平均を引いてSDで割る．
-    data_det_norm = (data_det - np.average(data_det, axis=0))/np.std(data_det, axis=0, ddof=1)
-    data_norm = (data - np.average(data, axis=0))/np.std(data, axis=0, ddof=1)
+    data_det_norm = (data_det - np.average(data_det, axis=0)) / np.std(data_det, axis=0, ddof=1)
+    data_norm = (data - np.average(data, axis=0)) / np.std(data, axis=0, ddof=1)
     return data_det, data_det_ampnorm
 
 
 def fft_peak(data, s=0, e=24 * 3, dt=60, pdf_plot=False):
-    '''fftによる周期推定．範囲は両端を含む
-    
+    """fftによる周期推定．範囲は両端を含む
+
     Args:
         data: numpy
         s: [time (h)] (default: {0})
         e: [time (h)] (default: {24 * 3})
         dt: [description] (default: {60})
         pdf_plot: [description] (default: {False})
-    
+
     Returns:
         [description]
         [type]
-    '''
+    """
     dt_h = dt / 60
     data = data[int(s / dt_h):int(e / dt_h) + 1]  # FFTに使うデータだけ．
     n = data.shape[0]
@@ -88,7 +87,7 @@ def fft_peak(data, s=0, e=24 * 3, dt=60, pdf_plot=False):
     fft_df['sample'] = fft_point[1]
     fft_df['amp'] = P1[fft_point]
     fft_df['f'] = f[fft_point[0]]
-    # fft_df['per'] = np.mod(np.angle(fft_data)[fft_point]+2*np.pi, 2*np.pi) 
+    # fft_df['per'] = np.mod(np.angle(fft_data)[fft_point]+2*np.pi, 2*np.pi)
     # 複素数なので位相が出る
     fft_df['pha'] = np.angle(fft_data)[fft_point]
     # 複素数なので位相が出る
@@ -134,7 +133,7 @@ def fit_plot(pp, fig, ax, i, x, y, func, y_min=None, y_max=None, plt_x=5, plt_y=
     ###################
     # fittingのプロット
     ###################
-    per_n = str(int(func.size/3))
+    per_n = str(int(func.size / 3))
     ax[i_mod].plot(x, eval("cos_models.cos_model_" + per_n + "(x, *func)"), '-r', lw=1)
     if np.mod(i, plt_n) == plt_n - 1:
         pdf_save(pp)
@@ -142,16 +141,15 @@ def fit_plot(pp, fig, ax, i, x, y, func, y_min=None, y_max=None, plt_x=5, plt_y=
     return ax
 
 
-def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf = False):
+def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf=False):
 
     result_df = pd.DataFrame(index=[list(range(data.shape[1]))], columns=['amp', 'tau', 'pha', 'rae'])
-    dt_h = dt / 60
     fft_df, time, data = fft_peak(data, s=s, e=e, dt=dt, pdf_plot=pdf_plot)
     fft_df = fft_df.rename(columns={'f': 'tau'})
     fft_df['tau'] = 1 / fft_df['tau']
     if pdf is not False:
         pp, fig, ax = start_plot(pdf, size_x=11.69, size_y=8.27)
-        plt_x, plt_y=5, 4
+        plt_x, plt_y = 5, 4
         plt_n = plt_x * plt_y
     for i in np.unique(fft_df['sample']):  # data毎にループ
         p0, result, perr = [], [], []
@@ -160,19 +158,22 @@ def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf 
         for j in range(len(fft_df_i['sample'])):  # 推定した周期毎にフィッティング
             p0 = np.hstack([p0, fft_df_i['amp'][j], fft_df_i['tau'][j], fft_df_i['pha'][j]])  # fftで求めた初期値を用いる
             try:
-                res, pcov = sp.optimize.curve_fit(eval("cos_models.cos_model_" + str(j+1)), time, data_i, p0=p0, ftol=1e-05)
+                res, pcov = sp.optimize.curve_fit(eval("cos_models.cos_model_" + str(j + 1)), time, data_i, p0=p0, ftol=1e-05)
                 per = np.sqrt(np.diag(pcov))  # 標準偏差
             except:
                 print('tol = ではerrerが出てるよ')
                 break
             p0[:len(res)] = res
-            res = res.reshape([-1,3])
-            per = per.reshape([-1,3])
+            res = res.reshape([-1, 3])
+            per = per.reshape([-1, 3])
             # 振幅のSDが振幅を超えたらだめ
-            if np.min(np.abs(res[:,0]/per[:, 0]))<1:break
+            if np.min(np.abs(res[:, 0] / per[:, 0])) < 1:
+                break
             else:
                 result = res
                 perr = per
+            if j == 14:  # もっとしたければcos_modelsに関数を追加して．
+                break
         print(i)
         perr = perr[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
         result = result[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
@@ -185,7 +186,7 @@ def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf 
             result_df['rae'][i] = np.diff(UL) / result[0, 0]
             result_df['amp'][i] = result[0, 0]
             result_df['tau'][i] = result[0, 1]
-            result_df['pha'][i] = result[0, 2]/np.pi/2*(-1) + 1
+            result_df['pha'][i] = result[0, 2] / np.pi / 2 * (-1) + 1
             if pdf is not False:
                 ax = fit_plot(pp, fig, ax, i, time, data_i, result.flatten(), y_min=None, y_max=None, plt_x=plt_x, plt_y=plt_y, title=i)
     if np.mod(i, plt_n) != plt_n - 1:
@@ -197,7 +198,7 @@ def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf 
 if __name__ == '__main__':
     # os.chdir(os.path.join('/hdd1', 'Users', 'kenya', 'Labo', 'keisan', 'python', '00data'))  # カレントディレクトリの設定
     os.chdir(os.path.join('/hdd1', 'Users', 'kenya', 'Labo', 'keisan', 'R_File', '190111_LDLL_CCA1_ALL', 'data'))
-    dt=20
+    dt = 20
     data_path = os.path.join('TimeSeries.txt')  # 解析データのパス
     df = pd.read_table(data_path)
     data = df.values
@@ -205,6 +206,6 @@ if __name__ == '__main__':
     data_det, data_det_ampnorm = data_norm(data, dt=20)
 
     np.savetxt("tmp.csv", data_det_ampnorm, delimiter=",")
-    a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf = 'tmp.pdf')
+    a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf='tmp.pdf')
     print(a)
     a.to_csv("tmp.csv")
