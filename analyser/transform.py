@@ -3,8 +3,10 @@
 
 import glob
 import os
+import sys
 import tkinter as tk
 
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import cv2
 import image_analysis as im
 import numpy as np
