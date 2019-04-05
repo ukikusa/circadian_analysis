@@ -4,25 +4,20 @@
 import os
 import sys
 
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+import FFT_nlls
 import image_analysis as im
-
 from make_figure import make_hst_fig
-
 # import matplotlib as mpl
 # mpl.use('Agg')
 from matplotlib.backends.backend_pdf import PdfPages
-# import matplotlib.pyplot as plt
-
 import numpy as np
-
 import pandas as pd
-
 import peak_analysis as pa
-
 from PIL import Image  # Pillowの方を入れる．PILとは共存しない
 
 
-def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_range=9, offset=0, r2_cut=0.5, min_tau=16, max_tau=32):
+def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_range=9, offset=0, r2_cut=0.5, min_tau=16, max_tau=32, amp_r=24*3):
     """画像データから二次関数フィティングで位相を出す.
 
     Args:
@@ -33,6 +28,7 @@ def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_r
         f_avg: [description] (default: {1})
         f_range: [description] (default: {9})
         offset: [description] (default: {0})
+        amp_r: [estimate ampritude range (h)] (default 72)
 
     Returns:
         位相(0-1)画像, 周期画像, r2値, peak_a[4], peak_a[5], ピーク時間
@@ -44,7 +40,7 @@ def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_r
     use_xy = np.where(np.sum(imgs, axis=0) != 0)  # データの存在する場所のインデックスをとってくる．
     # 解析
     peak_a = pa.phase_analysis(imgs[:, use_xy[0], use_xy[1]], avg=avg, p_range=p_range, f_avg=f_avg, f_range=f_range, time=time, r2_cut=r2_cut, min_tau=min_tau, max_tau=max_tau)
-    cv, sd = pa.amp_analysis(imgs[:, use_xy[0], use_xy[1]], int(60 / dt * 24 * 3))
+    cv, sd = pa.amp_analysis(imgs[:, use_xy[0], use_xy[1]], int(60 / dt * amp_r))
     ###############################
     # 出力
     ###############################
@@ -261,9 +257,9 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
             save = os.path.split(folder)[0]
             save = os.path.join(save, '_'.join(['tau_mesh-' + str(mesh), 'avg-' + str(avg), 'prange-' + str(p_range), 'frange-' + str(f_range)]))
         im.save_imgs(os.path.join(save, 'theta'), color_theta)
-        im.save_imgs(os.path.join(save, 'tau'), color_tau)
-        im.save_imgs(os.path.join(save, 'cv'), color_cv)
-        im.save_imgs(os.path.join(save, 'sd'), color_sd)
+        im.save_imgs(os.path.join(save, 'tau' + '_value_' + str(max_tau) + '-' str(min_tau)), color_tau)
+        im.save_imgs(os.path.join(save, 'cv' + '_value_' + str(np.max(cv)) + '-' str(np.min(cv))), color_cv)
+        # im.save_imgs(os.path.join(save, 'sd'), color_sd)
         Image.fromarray(color_legend).save(os.path.join(save, 'color_' + str(make_color[0]) + '-' + str(make_color[0]) + '_cv-' + '{:.2g}'.format(np.nanmax(cv)) + '.png'), compress_level=0)
         Image.fromarray(p_img).save(os.path.join(save, 'peak_img.png'), compress_level=0)
         # phaseを0−1で表したものをcsvファイルに
@@ -281,6 +277,77 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
             peak_a[5].T.to_excel(writer, sheet_name='peak_time', index=False, header=True)
             writer.save()
     return 0
+
+
+def img_fft_nlls(folder, mask_folder=False, avg=1, mesh=1, dt=60, offset=0, save=False, tau_range=[16, 30], pdf=False, xlsx=False):
+    """ピクセルごとに二次関数フィッティングにより解析する.
+
+    位相・周期・Peak時刻，推定の精度 を出力する．
+
+    Args:
+        folder: 画像群が入ったフォルダを指定する．
+        mask_folder: 背景が0になっている画像群を指定．
+        mesh: 解析前にメッシュ化する範囲 (default: {1} しない)
+        dt: Minite (default: {60})
+        offset: hour (default: {0})
+        p_range: 前後それぞれp_rangeよりも値が高い点をピークとみなす (default: {12})
+        f_avg: fiting前の移動平均 (default: {1})
+        f_range: 前後それぞれf_rangeのデータを用いて推定をする (default: {5})
+        save: 保存先のフォルダ名．Trueなら自動で名付け． (default: {False})
+        make_color: 周期を色付けする範囲 (default: {[22, 28]})
+        pdf: PDFを保存するか否か (default: {False})
+        xlsx: エクセルを保存するか否か (default: {False})
+        distance_center: 作図の際どこからの距離を取るか (default: {Ture} center)
+
+    Returns:
+        保存のみの関数．返り値は持たさない(0)．
+    """
+    # 上の全部まとめたった！！
+    if mesh == 1:
+        imgs = im.read_imgs(folder)
+        if mask_folder is not False:
+            mask = im.read_imgs(mask_folder)
+        else:
+            mask = False
+    else:
+        imgs = im.mesh_imgs(folder, mesh)
+        if mask_folder is not False:
+            mask = im.mesh_imgs(mask_folder, mesh)
+        else:
+            mask = False
+    ##################################
+    # 生物発光の画像群から使うデータをcsvからと同じにする
+    ##################################
+    time = np.arange(imgs.shape[0], dtype=np.float64) * dt / 60 + offset  # 時間データを作成．
+    use_xy = np.where(np.sum(imgs, axis=0) != 0)  # データの存在する場所のインデックスをとってくる．
+    data = imgs[:, use_xy[0], use_xy[1]]
+    # 解析
+    data_det, data_det_ampnorm = data_norm(data, dt=dt)
+    # np.savetxt("tmp.csv", data_det_ampnorm, delimiter=",")
+    a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=tau_range, pdf=pdf)
+    ## todo 
+    ### make Fig
+    ###################################
+    # 保存用に周期を整形
+    ###################################
+    tau_frond = peak_a[1] == -1
+    imgs_tau = (peak_a[1] - make_color[0]) / (make_color[1] - make_color[0]) * 0.7
+    nan = ~np.isnan(imgs_tau)
+    imgs_tau[nan][imgs_tau[nan] > 0.7] = 0.7
+    imgs_tau[nan][imgs_tau[nan] < 0] = 0
+    imgs_tau[tau_frond] = -1
+    color_legend = np.arange(30) * 0.7 / 30
+    color_legend = im.make_color(np.vstack([color_legend, color_legend, color_legend]))
+    color_tau = im.make_colors(imgs_tau, grey=-1)
+    ####################################
+    # 保存用にampを整形
+    ####################
+    color_cv = cv / np.nanmax(cv) * 0.7
+    color_cv[cv <= 0]] = -1
+    color_cv = im.make_colors(color_cv, grey=-1)
+    return 0
+
+
 
 if __name__ == "__main__":
     os.chdir(os.path.join('/hdd1', 'Users', 'kenya', 'Labo', 'keisan', 'python'))
