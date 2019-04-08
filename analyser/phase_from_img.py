@@ -257,8 +257,8 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
             save = os.path.split(folder)[0]
             save = os.path.join(save, '_'.join(['tau_mesh-' + str(mesh), 'avg-' + str(avg), 'prange-' + str(p_range), 'frange-' + str(f_range)]))
         im.save_imgs(os.path.join(save, 'theta'), color_theta)
-        im.save_imgs(os.path.join(save, 'tau' + '_value_' + str(max_tau) + '-' str(min_tau)), color_tau)
-        im.save_imgs(os.path.join(save, 'cv' + '_value_' + str(np.max(cv)) + '-' str(np.min(cv))), color_cv)
+        im.save_imgs(os.path.join(save, 'tau' + '_value_' + str(max_tau) + '-' + str(min_tau)), color_tau)
+        im.save_imgs(os.path.join(save, 'cv' + '_value_' + str(np.max(cv)) + '-' + str(np.min(cv))), color_cv)
         # im.save_imgs(os.path.join(save, 'sd'), color_sd)
         Image.fromarray(color_legend).save(os.path.join(save, 'color_' + str(make_color[0]) + '-' + str(make_color[0]) + '_cv-' + '{:.2g}'.format(np.nanmax(cv)) + '.png'), compress_level=0)
         Image.fromarray(p_img).save(os.path.join(save, 'peak_img.png'), compress_level=0)
@@ -324,7 +324,7 @@ def img_fft_nlls(folder, mask_folder=False, avg=1, mesh=1, dt=60, offset=0, save
     # 解析
     data_det, data_det_ampnorm = data_norm(data, dt=dt)
     # np.savetxt("tmp.csv", data_det_ampnorm, delimiter=",")
-    a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=tau_range, pdf=pdf)
+    #a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=tau_range, pdf=pdf)
     ## todo 
     ### make Fig
     ###################################
@@ -343,7 +343,7 @@ def img_fft_nlls(folder, mask_folder=False, avg=1, mesh=1, dt=60, offset=0, save
     # 保存用にampを整形
     ####################
     color_cv = cv / np.nanmax(cv) * 0.7
-    color_cv[cv <= 0]] = -1
+    color_cv[cv <= 0] = -1
     color_cv = im.make_colors(color_cv, grey=-1)
     return 0
 
@@ -356,6 +356,8 @@ if __name__ == "__main__":
     # パラメータ
     #########################
     folder = os.path.join('00data', 'nakamura_mask')
-    save = os.path.join('result', 'nakamura')
+    save = os.path.join('result', 'nakamura', "mesh")
 
-    img_pixel_theta(folder, avg=3, mesh=1, dt=20, offset=0, p_range=12, f_avg=1, f_range=5, save=save, make_color=[22, 28], xlsx=True)
+    #img_pixel_theta(folder, avg=3, mesh=3, dt=20, offset=0, p_range=12, f_avg=1, f_range=5, save=save, make_color=[22, 28], xlsx=True)
+
+    img_pixel_theta(folder, avg=3, mesh=3, dt=20, offset=0, p_range=12, f_avg=1, f_range=15, save=save, make_color=[22, 28], xlsx=True)

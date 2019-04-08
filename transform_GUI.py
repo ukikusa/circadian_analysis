@@ -32,8 +32,9 @@ class CheckdirsGui:
         """a."""
         while self.end:
             def ok_btn():
-                self.end = False
+                self.tki.destroy()
                 self.tki.quit()
+                self.end = False
 
             def other_btn():
                 self.move_folder.append(gui_path.dir_select(initialdir=self.parent_dir))

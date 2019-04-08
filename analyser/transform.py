@@ -25,29 +25,31 @@ class CheckRotationGui:
 
     def radiobutton_box(self):
         """a."""
-        tki = tk.Tk()
-        tki.geometry()
-        tki.title("フロンド回転の確認")
+        self.tki = tk.Tk()
+        self.tki.geometry()
+        self.tki.title("フロンド回転の確認")
         img = Image.fromarray(self.img, "L")
-        img = ImageTk.PhotoImage(img)
-        tk.Label(image=img, text=str(self.angle) + "度回転しました．いずれかを選択してください", compound="top").pack(side="top")
+        img = ImageTk.PhotoImage(master=self.tki, image=img)
+        print(img)
+        tk.Label(self.tki, image=img, text=str(self.angle) + "度回転しました．いずれかを選択してください", compound="top").pack(side="top")
         var = tk.IntVar()  # チェックの有無変数
         rdo_box = ["これで良い", "上下を反転させる", "回転角度を指定する"]
         var.set(0)
         for i in range(len(rdo_box)):
-            tk.Radiobutton(tki, value=i, variable=var, text=rdo_box[i]).pack(side="top", anchor="w")
-        tk.Label(text="回転させる角度").pack(side="left", anchor="w")
-        txt = tk.Entry(width=20)
+            tk.Radiobutton(self.tki, value=i, variable=var, text=rdo_box[i]).pack(side="top", anchor="w")
+        tk.Label(self.tki, text="回転させる角度").pack(side="left", anchor="w")
+        txt = tk.Entry(self.tki, width=20)
         txt.pack(side="left", anchor="w")
 
         def ok_btn():
             self.a = var.get()
             if self.a == 2:
                 self.angle = int(txt.get())
-            tki.destroy()
+            self.tki.quit()
+            self.tki.destroy()
 
-        tk.Button(tki, text='OK', command=ok_btn).pack(side="bottom")
-        tki.mainloop()
+        tk.Button(self.tki, text='OK', command=ok_btn).pack(side="bottom")
+        self.tki.mainloop()
         return self.a, self.angle
 
 

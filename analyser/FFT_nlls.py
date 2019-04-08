@@ -206,6 +206,6 @@ if __name__ == '__main__':
     data_det, data_det_ampnorm = data_norm(data, dt=20)
 
     np.savetxt("tmp.csv", data_det_ampnorm, delimiter=",")
-    a = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf='tmp.pdf')
-    print(a)
+    fft_nlls = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf='tmp.pdf')
+    fft_nlls_res = cos_fit(data_det_ampnorm, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf='tmp.pdf')
     a.to_csv("tmp.csv")
