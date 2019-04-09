@@ -72,7 +72,6 @@ def fft_peak(data, s=0, e=24 * 3, dt=60, pdf_plot=False):
     n = data.shape[0]
     time = np.arange(s, e + dt_h, dt_h)
     time = time - s
-    print(time)
     # f = 1/dt_h*np.arange(int(n/2))/n  # 1時間あたりの頻度
     f = np.linspace(0, 1.0 / dt_h, n)
     # FFTアルゴリズム(CT)で一次元のn点離散フーリエ変換（DFT）
@@ -174,13 +173,11 @@ def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf=
                 perr = per
             if j == 14:  # もっとしたければcos_modelsに関数を追加して．
                 break
-        print(i)
         perr = perr[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
         result = result[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
         result[result[:, 2] < 0, 2] = 2 * np.pi + result[result[:, 2] < 0, 2]
         result[result[:, 0] < 0, 0] = -result[result[:, 0] < 0, 0]
-
-        if result != []:
+        if len(result) != 0:
             # RAEを求める．これでいいのだろうか
             UL = sp.stats.norm.interval(loc=result[0, 0], scale=perr[0, 0], alpha=0.95)
             result_df['rae'][i] = np.diff(UL) / result[0, 0]
@@ -189,10 +186,11 @@ def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf=
             result_df['pha'][i] = result[0, 2] / np.pi / 2 * (-1) + 1
             if pdf is not False:
                 ax = fit_plot(pp, fig, ax, i, time, data_i, result.flatten(), y_min=None, y_max=None, plt_x=plt_x, plt_y=plt_y, title=i)
-    if np.mod(i, plt_n) != plt_n - 1:
-        pdf_save(pp)
-        plt.clf()
-        pp.close()
+    if pdf is not False:
+        if np.mod(i, plt_n) != plt_n - 1:
+            pdf_save(pp)
+            plt.clf()
+            pp.close()
     return result_df
 
 if __name__ == '__main__':
