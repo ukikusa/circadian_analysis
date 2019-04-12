@@ -52,8 +52,17 @@ class CheckRotationGui:
         self.tki.mainloop()
         return self.a, self.angle
 
+def rotation_reference_image(img):
+    """Specify the direction of the frond after rotation."""
+    img = img.astype(np.uint8)
+    imgEdge, contours, hierarchy = cv2.findContours(img, 1, 2)
+    w, h, angle = cv2.fitEllipse(contours[0])  # 楕円に近似
+    center = tuple((np.array(img.shape) / 2).astype(np.uint8))
+    warp = cv2.getRotationMatrix2D(center, angle, 1)  # 回転行列を求める
+    print warp, angle
 
-def img_transformECC(tmp_img, new_img, motionType=1):
+
+def img_transformECC(tmp_img, new_img, motionType=1, warp=np.eye(2, 3, dtype=np.float32)):
     """Estimate rotation matrix by transformECC.
 
     Args:
@@ -69,20 +78,22 @@ def img_transformECC(tmp_img, new_img, motionType=1):
     if np.max(tmp_img) > 255 or np.max(new_img) > 255:
         tmp_img = im.bit1628(tmp_img)
         new_img = im.bit1628(new_img)
-    tmp_img, new_img = tmp_img.astype(np.uint8), new_img.astype(np.uint8)
+    tmp_img_8, new_img_8 = tmp_img.astype(np.uint8), new_img.astype(np.uint8)
     # 上記に合わせた，WarpMatrixを指定　warpは結果を格納するところ
-    warp = np.eye(2, 3, dtype=np.float32)
     size = new_img.shape    # 出力画像のサイズを指定
     # 移動を計算
+    warp = warp.astype(np.float32)
+    # warp = np.eye(2, 3, dtype=np.float32)
     try:  # エラーでたら…
-        cv2.findTransformECC(new_img, tmp_img, warp, motionType=motionType)
+        print(warp)
+        (cc, warp_matrix) = cv2.findTransformECC(tmp_img_8, new_img_8, warp, motionType=motionType, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 0.001))
+        print(warp)
         temp = 0
     except:
         print('移動に失敗した画像があります')
         temp = 1
-        warp = np.eye(2, 3, dtype=np.float32)
     # 元画像に対して，決めた変換メソッドで変換を実行
-    out = cv2.warpAffine(new_img, warp, size, flags=cv2.INTER_NEAREST)
+    out = cv2.warpAffine(new_img_8, warp, size, flags=cv2.INTER_NEAREST)
     out[np.nonzero(out)] = np.max(out) - temp
     return out, warp, temp
 
@@ -99,8 +110,9 @@ def imgs_transformECC(calc_img, centroids=False, motionType=1):
     roop = np.where((tmp[:-1] * tmp[1:]) != 0)[0]
     for i in roop:  # 全部黒ならする必要ない．
         calc_img[i + 1][np.nonzero(calc_img[i + 1])] = np.max(calc_img[i])
-        calc_img[i + 1], warps[i], _ = img_transformECC(calc_img[i], calc_img[i + 1], motionType=motionType, centroid=centroids[i])
-    return calc_img, warps, roop
+        calc_img[i + 1], warps[i], _ = img_transformECC(calc_img[i], calc_img[i + 1], motionType=motionType)
+    out = np.copy(calc_img)
+    return out, warps, roop
 
 
 def imgs_transformECC_ver2(calc_imgs, motionType=1):
@@ -120,6 +132,7 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1):
     tmp = np.sum(calc_imgs, axis=(1, 2))
     roop = np.where(tmp != 0)[0]
     tmp_idx = np.argmax(tmp)
+    moved_imgs = np.empty_like(calc_imgs)
 
     def rotation_reference_image(img):
         """Specify the direction of the frond after rotation."""
@@ -133,25 +146,24 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1):
             out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
             check = CheckRotationGui(out, angle)
             a, angle = check.radiobutton_box()
-            # print(check.a, check.angle)
-            # a, angle = check.a, check.angle
             if a == 1:
                 warp = cv2.getRotationMatrix2D(center, angle + 180, 1)  # 回転行列を求める
                 out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
-            return out, a, angle
+            return out, a, angle, warp
         a = 2
         while a == 2:
-            out, a, angle = rotation_by_angle(img, center, angle)
-        return out
+            out, a, angle, warp = rotation_by_angle(img, center, angle)
+        return out, warp
 
-    tmp_img = rotation_reference_image(calc_imgs[tmp_idx])
+    tmp_img, tmp_warp = rotation_reference_image(calc_imgs[tmp_idx])
     try_r = 0
     for i in roop:  # 全部黒ならする必要ない．
         if try_r == 1:  # 直前の画像が移動補正に失敗した場合
-            calc_imgs[i][np.nonzero(calc_imgs[i])] = np.max(calc_imgs[i - 1])
-            tmp_img[np.nonzero(tmp_img)] = calc_imgs[i - 1]
-        calc_imgs[i], warps[i], try_r = img_transformECC(tmp_img, calc_imgs[i], motionType=motionType)
-    return calc_imgs, warps, roop
+            calc_imgs[i][np.nonzero(calc_imgs[i])] = np.max(calc_imgs[i]) - 1
+            tmp_img[np.nonzero(tmp_img)] = np.max(calc_imgs[i])
+        moved_imgs[i], warps[i], try_r = img_transformECC(tmp_img, calc_imgs[i], warp=tmp_warp, motionType=motionType)
+        # tmp_warp = np.copy(warps[i])
+    return moved_imgs, warps, roop
 
 
 def imgs_transformECC_warp(move_imgs, warps):
@@ -190,8 +202,9 @@ def frond_transform(parent_directory, calc_folder="mask_frond", other_folder_lis
         motionType: [description] (default: {1})
     """
     calc_imgs = im.read_imgs(os.path.join(parent_directory, calc_folder))
-    move_img, warps, roops = imgs_transformECC_ver2(calc_imgs)
-    im.save_imgs(os.path.join(parent_directory, "moved_" + calc_folder), calc_imgs)
+    move_img, warps, roops = imgs_transformECC_ver2(calc_imgs, motionType=motionType)
+    print(np.unique(move_img))
+    im.save_imgs(os.path.join(parent_directory, "moved_" + calc_folder), move_img)
     for i in other_folder_list:
         other_imgs = im.read_imgs(os.path.join(parent_directory, i))
         other_imgs = imgs_transformECC_warp(other_imgs, warps=warps)
@@ -201,7 +214,8 @@ def frond_transform(parent_directory, calc_folder="mask_frond", other_folder_lis
 if __name__ == '__main__':
     os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python", "00data"))
     # 処理したいデータのフォルダ
-    days = (['./170215-LL2LL-MVX', './170613-LD2LL-ito-MVX', './170829-LL2LL-ito-MVX'])
+    # days = (['./170215-LL2LL-MVX',
+    days = (['./170613-LD2LL-ito-MVX', './170829-LL2LL-ito-MVX'])
     # days = (['./170829-LL2LL-ito-MVX'])
     for day in days:
         frond_folder = day + '/frond'
