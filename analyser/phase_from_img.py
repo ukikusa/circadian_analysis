@@ -108,6 +108,9 @@ def peak_img_list(peak_img, per_ber=10, m=5, fold=24):
     if per_ber == 0 or False:
         return peak_img
     n, xsize, ysize = peak_img.shape[0:3]  # 画像サイズ
+    if n % fold:
+        peak_img = peak_img[:-(n%fold)] 
+        n = n - n%fold
     peak = np.sum(peak_img == 255, axis=(1, 2))
     frond = np.sum(peak_img != 0, axis=(1, 2))
     ber_len = xsize - 14  # berの長さ
@@ -123,7 +126,7 @@ def peak_img_list(peak_img, per_ber=10, m=5, fold=24):
     # ピークと判定されたピクセル数のバーを出す．
     peak_img = np.reshape(peak_img.transpose(1, 2, 0), (ysize, -1), 'F')  # 画像を横に並べる．
     peak_img[:m] = 255
-    if fold is not False:
+    if fold is not False: 
         peak_img = np.vstack(np.hsplit(peak_img, int(n / fold)))
     return peak_img
 
