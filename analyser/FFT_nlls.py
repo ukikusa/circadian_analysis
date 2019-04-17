@@ -181,7 +181,7 @@ def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf=
         if len(result) != 0:
             # RAEを求める．これでいいのだろうか
             UL = sp.stats.norm.interval(loc=result[0, 0], scale=perr[0, 0], alpha=0.95)
-            result_df['rae'][i] = np.diff(UL) / result[0, 0]
+            result_df['rae'][i] = np.diff(UL) / result[0, 0] / 2
             result_df['amp'][i] = result[0, 0]
             result_df['tau'][i] = result[0, 1]
             result_df['pha'][i] = result[0, 2] / np.pi / 2 * (-1) + 1
