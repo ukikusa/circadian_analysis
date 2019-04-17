@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """A function that analyzes a time series image group for each pixel."""
 
+import glob
 import os
 import sys
 
@@ -46,18 +47,22 @@ def make_theta_imgs(imgs, mask_img=False, avg=3, dt=60, p_range=13, f_avg=1, f_r
     index.extend(range(peak_a[0].shape[0]))
     p_time = pd.DataFrame(np.vstack((use_xy, peak_a[0])), index=index)
     r2 = pd.DataFrame(np.vstack((use_xy, peak_a[3])), index=index)
-    theta_imgs = np.empty(imgs.shape, dtype=np.float64)
-    theta_imgs[:] = np.nan
+    theta_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
     tau_imgs, cv_imgs, sd_imgs = np.copy(theta_imgs), np.copy(theta_imgs), np.copy(theta_imgs)
-    if mask_img is False:
-        peak_a[2][np.isnan(peak_a[2])] = -1
-        peak_a[6][np.isnan(peak_a[6])] = -1
-        cv[np.isnan(cv)] = -1
-        sd[np.isnan(sd)] = -1
+    # if mask_img is False:
+    #     peak_a[2][np.isnan(peak_a[2])] = -1
+    #     peak_a[6][np.isnan(peak_a[6])] = -1
+    #     cv[np.isnan(cv)] = -1
+    #     sd[np.isnan(sd)] = -1
     theta_imgs[:, use_xy[0], use_xy[1]] = peak_a[2]
     tau_imgs[:, use_xy[0], use_xy[1]] = peak_a[6]
     cv_imgs[:, use_xy[0], use_xy[1]] = cv
     sd_imgs[:, use_xy[0], use_xy[1]] = sd
+    if mask_img is False:
+        theta_imgs[np.logical_and(np.isnan(theta_imgs), imgs > 0)] = -1
+        tau_imgs[np.logical_and(np.isnan(tau_imgs), imgs > 0)] = -1
+        cv_imgs[np.logical_and(np.isnan(cv_imgs), imgs > 0)] = -1
+        sd_imgs[np.logical_and(np.isnan(sd_imgs), imgs > 0)] = -1
     if mask_img is not False:
         theta_imgs[np.isnan(theta_imgs) * mask_img > 0] = -1
         tau_imgs[np.isnan(tau_imgs) * mask_img > 0] = -1
@@ -221,7 +226,7 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
     peak_a = make_theta_imgs(imgs, mask_img=mask, avg=avg, dt=dt, p_range=p_range, f_avg=f_avg, f_range=f_range, offset=offset, r2_cut=r2_cut, min_tau=min_tau, max_tau=max_tau)
     # 位相のデータは醜いので，カラーのデータを返す．
     cv, sd = peak_a[7], peak_a[8]
-    color_theta = im.make_colors(peak_a[0], grey=-1)
+    color_theta = im.make_colors(peak_a[0], grey=-1, black=np.nan)
     ###################################
     # 保存用に周期を整形
     ###################################
@@ -313,29 +318,30 @@ def img_fft_nlls(folder, calc_range=[24, 24 * 3], mask_folder=False, avg=1, mesh
     ##################################
     # 生物発光の画像群から使うデータをcsvからと同じにする
     ##################################
-    use_xy = np.where(np.all(imgs[int(calc_range[0] * 60 / dt):int(calc_range[1] * 60 / dt)] != 0, axis=0) != 0)  # データの存在する場所のインデックスをとってくる．
+    print(np.sum(np.all(imgs[int(calc_range[0] * 60 / dt):int(calc_range[1] * 60 / dt) + 1] != 0, axis=0)))  # データの存在する場所のインデックスをとってくる)
+    use_xy = np.where(np.all(imgs[int(calc_range[0] * 60 / dt):int(calc_range[1] * 60 / dt) + 1] != 0, axis=0))  # データの存在する場所のインデックスをとってくる．
     data = imgs[:, use_xy[0], use_xy[1]]
     print(str(data.shape[1]) + "個のデータを解析します")
     ########################################################
     # 解析
     ########################################################
     data_det, data_det_ampnorm = FFT_nlls.data_norm(data, dt=dt)
-    fft_nlls_det = FFT_nlls.cos_fit(data_det, s=calc_range[0], e=calc_range[1], dt=dt, pdf_plot=False, tau_range=tau_range, pdf=pdf)
+    # fft_nlls_det = FFT_nlls.cos_fit(data_det, s=calc_range[0], e=calc_range[1], dt=dt, pdf_plot=False, tau_range=tau_range, pdf=pdf)
     fft_nlls_ampnorm = FFT_nlls.cos_fit(data_det_ampnorm, s=calc_range[0], e=calc_range[1], dt=dt, pdf_plot=False, tau_range=tau_range, pdf=pdf)
     ###################################
     # 周期を画像に戻す．
     ###################################
     tau_dat_img = np.full_like(imgs[0], np.nan, dtype=np.float64)
     tau_ampnorm_img, rae_dat_img, rae_ampnorm_img = np.copy(tau_dat_img), np.copy(tau_dat_img), np.copy(tau_dat_img)
-    tau_dat_img[use_xy], rae_dat_img[use_xy] = fft_nlls_det['tau'], fft_nlls_det['rae']
+    # tau_dat_img[use_xy], rae_dat_img[use_xy] = fft_nlls_det['tau'], fft_nlls_det['rae']
     tau_ampnorm_img[use_xy], rae_ampnorm_img[use_xy] = fft_nlls_ampnorm['tau'], fft_nlls_ampnorm['rae']
 
-    tau_dat_img_colure = (tau_dat_img - tau_range[0]) / (tau_range[1] - tau_range[0]) * 0.7
+    # tau_dat_img_colure = (tau_dat_img - tau_range[0]) / (tau_range[1] - tau_range[0]) * 0.7
     tau_ampnorm_img_colure = (tau_ampnorm_img - tau_range[0]) / (tau_range[1] - tau_range[0]) * 0.7
 
     color_legend = np.arange(30) * 0.7 / 30
     color_legend = im.make_color(np.vstack([color_legend, color_legend, color_legend]))
-    tau_dat_img_colure = im.make_color(tau_dat_img_colure, grey=-1)
+    # tau_dat_img_colure = im.make_color(tau_dat_img_colure, grey=-1)
     tau_ampnorm_img_colure = im.make_color(tau_ampnorm_img_colure, grey=-1)
     ####################################
     # 保存
@@ -345,20 +351,32 @@ def img_fft_nlls(folder, calc_range=[24, 24 * 3], mask_folder=False, avg=1, mesh
     elif save is not False:
         save = save + 'fft_nlls-' + str(calc_range[0]) + '-' + str(calc_range[1]) + '_mesh-' + str(mesh) + '_avg-' + str(avg)
     if save is not False:
-        np.save(save + 'npy', tau_dat_img)
+        # np.save(save + 'npy', tau_dat_img)
         np.save(save + '_ampnorm.npy', tau_ampnorm_img)
-        Image.fromarray(tau_dat_img_colure).save(save + '.tif')
+        np.save(save + '_ampnorm_rae.npy', rae_ampnorm_img)
+        # Image.fromarray(tau_dat_img_colure).save(save + '.tif')
         Image.fromarray(tau_ampnorm_img_colure).save(save + '_ampnorm.tif')
-    return tau_dat_img, tau_ampnorm_img, tau_dat_img_colure, tau_ampnorm_img_colure
-
+    # return tau_dat_img, tau_ampnorm_img, tau_dat_img_colure, tau_ampnorm_img_colure
+    return tau_ampnorm_img, tau_ampnorm_img_colure
 
 if __name__ == "__main__":
 
-    os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python"))
+    os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python", "00data"))
     # 処理したいデータのフォルダ
-    folder = os.path.join('00data', '170613-LD2LL-ito-MVX', 'frond', 'label-001_n214', 'moved_mask_frond_lum')
-    save = os.path.join('result', '170613-LD2LL-ito-MVX, frond, label-001_n214, fft_nlls')
-    img_fft_nlls(folder, calc_range=[24, 24 * 3], mask_folder=False, avg=1, mesh=1, dt=60, offset=0, save=save, tau_range=[16, 30], pdf=False)
+
+    days = (['./170215-LL2LL-MVX', './170613-LD2LL-ito-MVX', './170829-LL2LL-ito-MVX'])
+    for day in days:
+        frond_folder = os.path.join(day, 'frond')
+        folder_list = sorted(glob.glob(os.path.join(frond_folder, '*')))
+        for i in folder_list:
+            print(i)
+            folder = os.path.join(i, 'moved_mask_frond_lum')
+            save = os.path.join("result", day, os.path.basename(i))
+            img_pixel_theta(folder, avg=3, mesh=1, dt=60, offset=0, p_range=6, f_avg=3, f_range=7, save=save, make_color=[22, 28], xlsx=True, r2_cut=0.5)
+
+    # folder = os.path.join('00data', '170613-LD2LL-ito-MVX', 'frond', 'label-001_n214', 'moved_mask_frond_lum')
+    # save = os.path.join('result', '170613-LD2LL-ito-MVX, frond, label-001_n214, fft_nlls')
+    # img_fft_nlls(folder, calc_range=[24, 24 * 3], mask_folder=False, avg=1, mesh=1, dt=60, offset=0, save=save, tau_range=[16, 30], pdf=False)
 
     # img_pixel_theta(folder, avg=3, mesh=3, dt=20, offset=0, p_range=12, f_avg=1, f_range=5, save=save, make_color=[22, 28], xlsx=True)
 

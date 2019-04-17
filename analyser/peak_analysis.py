@@ -18,9 +18,8 @@ def moving_avg(data, avg=2):
 def amp_analysis(data, h_range=24 * 3):
     range_2 = int(h_range / 2)
     data = data.astype(np.float64)
-    cv = np.empty_like(data)
+    cv = np.full_like(data, np.nan)
     data[data == 0] = np.nan
-    cv[:] = np.nan
     sd = np.copy(cv)
     n = data.shape[0]
     n_e = n - range_2

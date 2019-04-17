@@ -173,10 +173,11 @@ def cos_fit(data, s=0, e=24 * 3, dt=60, pdf_plot=False, tau_range=[16, 30], pdf=
                 perr = per
             if j == 14:  # もっとしたければcos_modelsに関数を追加して．
                 break
-        perr = perr[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
-        result = result[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
-        result[result[:, 2] < 0, 2] = 2 * np.pi + result[result[:, 2] < 0, 2]
-        result[result[:, 0] < 0, 0] = -result[result[:, 0] < 0, 0]
+        if len(result) != 0:
+            perr = perr[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
+            result = result[(result[:, 1] > tau_range[0]) * (result[:, 1] < tau_range[1])]
+            result[result[:, 2] < 0, 2] = 2 * np.pi + result[result[:, 2] < 0, 2]
+            result[result[:, 0] < 0, 0] = -result[result[:, 0] < 0, 0]
         if len(result) != 0:
             # RAEを求める．これでいいのだろうか
             UL = sp.stats.norm.interval(loc=result[0, 0], scale=perr[0, 0], alpha=0.95)

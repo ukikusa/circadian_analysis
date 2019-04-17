@@ -84,14 +84,9 @@ def img_transformECC(tmp_img, new_img, motionType=1, warp=np.eye(2, 3, dtype=np.
     size = new_img.shape    # 出力画像のサイズを指定
     # 移動を計算
     warp = warp.astype(np.float32)
-    # print(warp)
-    # warp = np.eye(2, 3, dtype=np.float32)
-    print(np.max(new_img_8), np.max(tmp_img_8))
-    print(warp)
     try:  # エラーでたら…
         #     # (cc, warp_matrix) = cv2.findTransformECC(new_img_8, tmp_img_8, warp, motionType=motionType, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 0.1))
         cc, warp_matrix = cv2.findTransformECC(new_img_8, tmp_img_8, warp, motionType=motionType, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 0.5))
-    #     print(warp)
         temp = 0
     except:
         print('移動に失敗した画像があります')
@@ -135,12 +130,10 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1):
     # 移動補正をまとめた．
     warps = np.zeros((calc_imgs.shape[0], 2, 3), dtype=np.float64)
     warps[:, 0, 0], warps[:, 1, 1] = 1, 1
-    # print(warps.dtype)
     tmp = np.sum(calc_imgs, axis=(1, 2))
     # roop = np.where(tmp != 0)[0]
     roop = np.where((tmp[:-1] * tmp[1:]) != 0)[0]
     tmp_idx = np.argmax(tmp)
-    moved_imgs = np.empty_like(calc_imgs)
 
     def rotation_reference_image(img):
         """Specify the direction of the frond after rotation."""
@@ -172,7 +165,6 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1):
     #         tmp_img[np.nonzero(tmp_img)] = np.max(calc_imgs[i])
     #     moved_imgs[i], warps[i], try_r = img_transformECC(tmp_img, calc_imgs[i], warp=tmp_warp, motionType=motionType)
     warps[tmp_idx] = np.copy(tmp_warp)
-    print(tmp_idx)
     for i in range(0, tmp_idx)[::-1]:  # 全部黒ならする必要ない．
         if i in roop:
             # calc_imgs[i + 1][np.nonzero(calc_imgs[i + 1])] = np.max(calc_imgs[i])
@@ -224,7 +216,6 @@ def frond_transform(parent_directory, calc_folder="mask_frond", other_folder_lis
     """
     calc_imgs = im.read_imgs(os.path.join(parent_directory, calc_folder))
     move_img, warps, roops = imgs_transformECC_ver2(calc_imgs, motionType=motionType)
-    print(np.unique(move_img))
     im.save_imgs(os.path.join(parent_directory, "moved_" + calc_folder), move_img)
     for i in other_folder_list:
         other_imgs = im.read_imgs(os.path.join(parent_directory, i))
