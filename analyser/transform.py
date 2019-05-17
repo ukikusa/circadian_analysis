@@ -140,7 +140,7 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1):
         img = img.astype(np.uint8)
         imgEdge, contours, hierarchy = cv2.findContours(img, 1, 2)
         w, h, angle = cv2.fitEllipse(contours[0])  # 楕円に近似
-        center = tuple((np.array(img.shape) / 2).astype(np.uint8))
+        center = tuple((np.array(img.shape) / 2).astype(np.uint16))
 
         def rotation_by_angle(img, center, angle):
             warp = cv2.getRotationMatrix2D(center, angle, 1)  # 回転行列を求める

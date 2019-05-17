@@ -270,6 +270,7 @@ def img_pixel_theta(folder, mask_folder=False, avg=3, mesh=1, dt=60, offset=0, p
         # phaseを0−1で表したものをcsvファイルに
         np.save(os.path.join(save, 'theta.npy'), peak_a[0])
         np.save(os.path.join(save, 'tau.npy'), imgs_tau)
+        np.save(os.path.join(save, 'cv.npy'), cv)
         if pdf is not False:
             if pdf is True:
                 pdf = os.path.join(save, 'pdf')
@@ -364,12 +365,12 @@ def img_fft_nlls(folder, calc_range=[24, 24 * 3], mask_folder=False, avg=1, mesh
 
 if __name__ == "__main__":
 
-    os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python", "00data"))
+    os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python"))
     # 処理したいデータのフォルダ
 
-    days = (['./170215-LL2LL-MVX', './170613-LD2LL-ito-MVX', './170829-LL2LL-ito-MVX'])
+    days = (['170215-LL2LL-MVX', '170613-LD2LL-ito-MVX', '170829-LL2LL-ito-MVX'])
     for day in days:
-        frond_folder = os.path.join(day, 'frond')
+        frond_folder = os.path.join('00data', day, 'frond')
         folder_list = sorted(glob.glob(os.path.join(frond_folder, '*')))
         for i in folder_list:
             print(i)
