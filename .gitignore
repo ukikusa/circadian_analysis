@@ -1,2 +1,5 @@
-.python-version
+\# .python-version \#
+\# requirements.txt \#
 __pycache__
+.vscode
+.venv

@@ -1,7 +1,6 @@
 # -*-coding: utf-8 -*-
 """フロンド内，ピクセルごとの解析を行う.現行の出力は，24時間幅のcv,sd(ともに振幅), 周期，位相の画像．"""
 
-import numpy as np
 import os
 import sys
 
@@ -10,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import analyser.image_analysis as im
 import analyser.make_figure as make_figure
 import analyser.peak_analysis as pa
+import numpy as np
 
 # ディレクトリを import の探索パスに追加
 

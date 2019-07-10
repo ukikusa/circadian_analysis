@@ -3,7 +3,7 @@
 
 import os
 
-import cos_models
+import analyser.cos_models
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import numpy as np
@@ -207,4 +207,4 @@ if __name__ == '__main__':
     np.savetxt("tmp.csv", data_det_ampnorm, delimiter=",")
     fft_nlls = cos_fit(data_det, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf='tmp.pdf')
     fft_nlls_res = cos_fit(data_det_ampnorm, s=48, e=120, dt=20, pdf_plot=False, tau_range=[10, 40], pdf='tmp.pdf')
-    a.to_csv("tmp.csv")
+    fft_nlls_res.to_csv("tmp.csv")
