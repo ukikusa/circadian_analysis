@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-    Quantifies spatio-temporal pattern formation in imaging data.
+    This function quantifies spatio-temporal pattern formation in imaging data..
 
 https://academic.oup.com/bioinformatics/article/33/19/3072/3859179
 """
 
 import os
-import sys
 
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import numpy as np
+from scipy.spatial.distance import cdist
 
 
 def phase_diff(x, y):
@@ -18,29 +17,17 @@ def phase_diff(x, y):
 
 def Morans_i(data, decay=-2):
     coordinate = np.where(~np.isnan(data) * data >= 0)
-    data[coordinate] = data[coordinate] * 2 * np.pi
+    phase_data = data[coordinate] * 2 * np.pi
     coordinate_np = np.array(coordinate).T
-    tmp_index = np.arange(len(coordinate[0]))
-    ii, jj = np.meshgrid(tmp_index, tmp_index)  # 全ての組み合わせのリストを作成
-    ii_coor, jj_coor = (
-        np.reshape(coordinate_np[ii].T, (2, -1)),
-        np.reshape(coordinate_np[jj].T, (2, -1)),
-    )
-    weight = np.linalg.norm(ii_coor - jj_coor, axis=0) ** decay
-    weight[np.isinf(weight)] = 0
-    total_mean = np.arctan2(
-        np.sum(np.sin(data[coordinate])), np.sum(np.cos(data[coordinate]))
-    )
-    data_diff = phase_diff(data, total_mean)
-    data_i = data_diff[tuple(ii_coor)]
-    data_j = data_diff[tuple(jj_coor)]
+    weight = cdist(coordinate_np, coordinate_np)
+    weight[weight != 0] = weight[weight != 0] ** decay
+    total_mean = np.arctan2(np.sum(np.sin(phase_data)), np.sum(np.cos(phase_data)))
+    data_diff = phase_diff(phase_data, total_mean)  # meanとの引き算を先にするb
     MI = (
-        np.dot(weight, data_i * data_j)
-        / np.sum(np.square(data_diff[coordinate]))
+        np.sum(weight * np.outer(data_diff, data_diff))
+        / np.average(np.square(data_diff))
         / np.sum(weight)
-        * data[coordinate].size
     )
-    print(MI)
     return MI
 
 
@@ -54,9 +41,9 @@ if __name__ == "__main__":
         "result", "170613-LD2LL-ito-MVX", "label-002_n214", "theta.npy"
     )
     data = np.load(file_)
-    data[np.where(~np.isnan(data) * data >= 0)] = 1
-    data[np.where(~np.isnan(data) * data >= 0)] = np.random.rand(
-        data[np.where(~np.isnan(data) * data >= 0)].size
-    )
+    # data[np.where(~np.isnan(data) * data >= 0)] = 1
+    # data[np.where(~np.isnan(data) * data >= 0)] = np.random.rand(
+    #     data[np.where(~np.isnan(data) * data >= 0)].size
+    # )
     for i in range(data.shape[0]):
         Morans_i(data[i])
