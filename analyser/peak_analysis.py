@@ -4,14 +4,13 @@
 import sys
 
 import numpy as np
-
 from scipy import signal
 
 
 def moving_avg(data, avg=2):
     """A function for obtaining moving average."""
-    a = np.ones(avg) / avg
-    avg_data = np.convolve(data, a, 'valid')
+    kernel = np.ones(avg) / avg
+    avg_data = np.convolve(data, kernel, "valid")
     return avg_data
 
 
@@ -24,7 +23,7 @@ def amp_analysis(data, h_range=24 * 3):
     n = data.shape[0]
     n_e = n - range_2
     for i in range(range_2, n_e):
-        data_i = data[i - range_2:i + range_2]
+        data_i = data[i - range_2 : i + range_2]
         sd_i = np.std(data_i, axis=0)
         sd[i] = sd_i
         cv[i] = sd_i / np.average(data_i, axis=0)
@@ -51,13 +50,15 @@ def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0):
     if avg != 1:  # 移動平均
         data = moving_avg(data, avg=avg)
         p_tmp = p_tmp - avg % 2
-        time = time[(avg % 2): (avg % 2) + n]
+        time = time[(avg % 2) : (avg % 2) + n]
     if len(time) != len(data):
         sys.exit("Timeの長さとDataの長さを一致させてください．")
     ####################
     # ピークポイント抽出
     ####################
-    p_tmp = p_tmp[np.where(p_tmp < n - f_range, 1, 0) * np.where(p_tmp > f_range + 1, 1, 0) == 1]
+    p_tmp = p_tmp[
+        np.where(p_tmp < n - f_range, 1, 0) * np.where(p_tmp > f_range + 1, 1, 0) == 1
+    ]
     # fitting範囲が取れない場所を除く
     tmp_n = len(p_tmp)
     if tmp_n == 0:  # ピークがないとき
@@ -70,18 +71,23 @@ def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0):
     ###################################
     for count, i in enumerate(p_tmp):
         i_f, i_e = i - f_range, i + f_range + 1
-        fit = np.polyfit(time[i_f: i_e], data[i_f: i_e], deg=2, full=True)
+        fit = np.polyfit(time[i_f:i_e], data[i_f:i_e], deg=2, full=True)
         func[count] = fit[0]
-        r2[count] = (1 - fit[1] / np.var(data[i_f: i_e], ddof=f_range * 2))
+        r2[count] = 1 - fit[1] / np.var(data[i_f:i_e], ddof=f_range * 2)
     peak_t = -func[:, 1] * 0.5 / func[:, 0]  # peak時間
     peak_v = func[:, 2] - pow(func[:, 1], 2) * 0.25 / func[:, 0]  # peak時の値
-    j = np.where(func[:, 0] < 0, 1, 0) * np.where(peak_t < time[p_tmp + f_range], 1, 0) * np.where(time[p_tmp - f_range] > 0, 1, 0) * np.where(r2 >= r2_cut, 1, 0)
+    j = (
+        np.where(func[:, 0] < 0, 1, 0)
+        * np.where(peak_t < time[p_tmp + f_range], 1, 0)
+        * np.where(time[p_tmp - f_range] > 0, 1, 0)
+        * np.where(r2 >= r2_cut, 1, 0)
+    )
     return peak_t[j == 1], peak_v[j == 1], func[j == 1], r2[j == 1], p_tmp[j == 1]
 
 
 def peak_cut(peak_t, peak_v, func, r2, p_tmp, min_tau=16, max_tau=32):
     """不要なピークをカットする."""
-    dic = {'peak_v': peak_v, 'func': func, 'p_tmp': p_tmp}
+    dic = {"peak_v": peak_v, "func": func, "p_tmp": p_tmp}
 
     def edege_long_del(peak_t, r2, max_tau=32, **dic):
         """"両はじに長い周期があったらそれを消す."""
@@ -127,18 +133,18 @@ def peak_cut(peak_t, peak_v, func, r2, p_tmp, min_tau=16, max_tau=32):
     if len(peak_t) <= 1:
         return [], [], [], [], []
     for i in range(len(peak_t)):
-        peak_t, r2, dic = short_tau_peak_del(peak_t, r2, **dic)
+        peak_t, r2, dic = short_tau_peak_del(peak_t, r2, min_tau, max_tau, **dic)
         if len(peak_t) <= 1:
             return [], [], [], [], []
-        peak_t, r2, dic = edege_long_del(peak_t, r2, **dic)
+        peak_t, r2, dic = edege_long_del(peak_t, r2, max_tau, **dic)
         if len(peak_t) <= 1:
             return [], [], [], [], []
         if i == len(peak_t):
-            return peak_t, dic['peak_v'], dic['func'], r2, dic['p_tmp']
-    return peak_t, dic['peak_v'], dic['func'], r2, dic['p_tmp']
+            return peak_t, dic["peak_v"], dic["func"], r2, dic["p_tmp"]
+    return peak_t, dic["peak_v"], dic["func"], r2, dic["p_tmp"]
 
 
-def make_phase(peak_time, n=168, dt=60, time=False, r2=False, min_tau=16, max_tau=32):
+def make_phase(peak_time, n=168, dt_m=60, time=False, min_tau=16, max_tau=32):
     """A function that creates a list of phases from the peak list.
 
     Args:
@@ -155,7 +161,7 @@ def make_phase(peak_time, n=168, dt=60, time=False, r2=False, min_tau=16, max_ta
     no_nan = ~np.isnan(peak_time)
     peak_time = peak_time[no_nan]
     if time is False:
-        time = np.arange(n) * dt / 60
+        time = np.arange(n) * dt_m / 60
     phase = np.empty(len(time), dtype=np.float64)
     phase[:] = np.nan
     tau = np.copy(phase)
@@ -165,12 +171,24 @@ def make_phase(peak_time, n=168, dt=60, time=False, r2=False, min_tau=16, max_ta
             # ピークとピークの間を0-1に均等割．
             tai_i = peak_time[i + 1] - peak_time[i]
             if tai_i <= max_tau and tai_i >= min_tau:
-                phase[peak_idx[i]:peak_idx[i + 1]] = (time[peak_idx[i]:peak_idx[i + 1]] - peak_time[i]) / (peak_time[i + 1] - peak_time[i])
-                tau[peak_idx[i]:peak_idx[i + 1]] = peak_time[i + 1] - peak_time[i]
+                phase[peak_idx[i] : peak_idx[i + 1]] = (
+                    time[peak_idx[i] : peak_idx[i + 1]] - peak_time[i]
+                ) / (peak_time[i + 1] - peak_time[i])
+                tau[peak_idx[i] : peak_idx[i + 1]] = peak_time[i + 1] - peak_time[i]
     return phase, tau
 
 
-def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, time=False, r2_cut=False, min_tau=16, max_tau=32):
+def phase_analysis(
+    data,
+    dt_m=60,
+    p_range=12,
+    f_avg=1,
+    f_range=5,
+    offset=0,
+    r2_cut=False,
+    min_tau=16,
+    max_tau=32,
+):
     """データ群に対して二次関数フィッティングを行い，位相等のデータを出力する.
 
     Args:
@@ -188,8 +206,7 @@ def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, t
     """
     t_n = data.shape[0]
     d_n = data.shape[1]
-    if time is False:
-        time = np.arange(data.shape[0], dtype=np.float64) * dt / 60 + offset
+    time = np.arange(data.shape[0], dtype=np.float64) * dt_m / 60 + offset
     p_tmp = signal.argrelmax(data, order=p_range, axis=0)  # 周りより値が大きい点抽出
     p_tmp_n = np.max(np.bincount(p_tmp[1]))
     ###############
@@ -199,7 +216,11 @@ def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, t
     d_tau = np.empty_like(data, dtype=np.float64)
     print(p_tmp)
     peak_t = np.zeros((p_tmp_n, d_n), dtype=np.float64)
-    peak_v, r2, peak_point = np.zeros_like(peak_t), np.zeros_like(peak_t), np.zeros_like(peak_t)
+    peak_v, r2, peak_point = (
+        np.zeros_like(peak_t),
+        np.zeros_like(peak_t),
+        np.zeros_like(peak_t),
+    )
     func = np.zeros((p_tmp_n, data.shape[1], 3))
     # それぞれの時系列に対して二次関数フィッティングを行う．
     for i in range(d_n):
@@ -208,20 +229,42 @@ def phase_analysis(data, avg, dt=60, p_range=12, f_avg=1, f_range=5, offset=0, t
         if len(p_tmp_i) <= 1:
             d_theta[:, i], d_tau[:, i] = np.nan, np.nan
         else:
-            peak_t_i, peak_v_i, func_i, r2_i, p_tmp_i = peak_find(data[:, i], p_tmp=p_tmp_i, avg=f_avg, f_range=f_range, time=time, r2_cut=r2_cut)
-            fit = peak_cut(peak_t_i, peak_v_i, func_i, r2_i, p_tmp_i, min_tau=min_tau, max_tau=max_tau)
+            peak_t_i, peak_v_i, func_i, r2_i, p_tmp_i = peak_find(
+                data[:, i],
+                p_tmp=p_tmp_i,
+                avg=f_avg,
+                f_range=f_range,
+                time=time,
+                r2_cut=r2_cut,
+            )
+            fit = peak_cut(
+                peak_t_i,
+                peak_v_i,
+                func_i,
+                r2_i,
+                p_tmp_i,
+                min_tau=min_tau,
+                max_tau=max_tau,
+            )
 
             if len(fit[0]) <= 1:
                 d_theta[:, i], d_tau[:, i] = np.nan, np.nan
             else:
-                peak_t[:len(fit[0]), i] = fit[0]
-                peak_v[:len(fit[1]), i] = fit[1]
-                r2[:len(fit[1]), i] = fit[3]
-                func[:len(fit[1]), i] = fit[2]
-                peak_point[:len(fit[1]), i] = fit[4]
-                d_theta[:, i], d_tau[:, i] = make_phase(fit[0], t_n, dt=dt, time=time, r2=fit[3], min_tau=min_tau, max_tau=max_tau)
+                peak_t[: len(fit[0]), i] = fit[0]
+                peak_v[: len(fit[1]), i] = fit[1]
+                r2[: len(fit[1]), i] = fit[3]
+                func[: len(fit[1]), i] = fit[2]
+                peak_point[: len(fit[1]), i] = fit[4]
+                d_theta[:, i], d_tau[:, i] = make_phase(
+                    fit[0], t_n, dt_m=dt_m, time=time, min_tau=min_tau, max_tau=max_tau
+                )
     idx = np.nonzero(np.sum(peak_point, axis=1))  # いらんとこ消す
     idx_0 = peak_point == 0
-    peak_t[idx_0], peak_v[idx_0], r2[idx_0], peak_point[
-        idx_0], func[idx_0] = np.nan, np.nan, np.nan, np.nan, np.nan
+    peak_t[idx_0], peak_v[idx_0], r2[idx_0], peak_point[idx_0], func[idx_0] = (
+        np.nan,
+        np.nan,
+        np.nan,
+        np.nan,
+        np.nan,
+    )
     return peak_t[idx], peak_v[idx], d_theta, r2[idx], peak_point[idx], func[idx], d_tau
