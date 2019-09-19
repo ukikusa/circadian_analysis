@@ -214,7 +214,7 @@ def phase_analysis(
     ###############
     d_theta = np.empty_like(data, dtype=np.float64)
     d_tau = np.empty_like(data, dtype=np.float64)
-    print(p_tmp)
+    # print(p_tmp)
     peak_t = np.zeros((p_tmp_n, d_n), dtype=np.float64)
     peak_v, r2, peak_point = (
         np.zeros_like(peak_t),

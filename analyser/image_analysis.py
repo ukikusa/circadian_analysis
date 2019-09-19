@@ -11,45 +11,76 @@ import numpy as np
 from PIL import Image  # Pillowの方を入れる．PILとは共存しない
 
 
-def read_imgs(img_folder, color=False, extension='tif'):  # 画像入っているフォルダ
-    file_list = sorted(glob.glob(os.path.join(img_folder, '*.' + extension)))
-    if len(file_list) == 0:
-        print(img_folder + '/*.' + extension + 'がありません')
+def read_imgs(img_folder, color=False, extension="tif", stack=True):  # 画像入っているフォルダ
+    if not os.path.exists(img_folder):
+        print(img_folder + "がありません")
         sys.exit()
     if color is False:  # グレースケール読むとき
         imread_type = cv2.IMREAD_GRAYSCALE | cv2.IMREAD_ANYDEPTH
     elif color is True:  # カラー読むとき
         imread_type = cv2.IMREAD_COLOR
-    tmp = cv2.imread(file_list[0], imread_type)  # 1枚目
-    img = np.empty(np.concatenate(([len(file_list)], tmp.shape)), dtype=tmp.dtype)  # 箱
-    img[0] = tmp  # 1枚目を箱に
-    for i in range(1, len(file_list)):  # 2枚目から全部取り込み
-        img[i] = cv2.imread(file_list[i], imread_type)
-    print(img_folder + 'から' + str(i + 1) + '枚取り込みました．')
+    if stack:
+        ref, img = cv2.imreadmulti(img_folder, flags=imread_type)
+    if not stack:
+        file_list = sorted(glob.glob(os.path.join(img_folder, "*." + extension)))
+        tmp = cv2.imread(file_list[0], imread_type)  # 1枚目
+        img = np.empty(
+            np.concatenate(([len(file_list)], tmp.shape)), dtype=tmp.dtype
+        )  # 箱
+        img[0] = tmp  # 1枚目を箱に
+        for i in range(1, len(file_list)):  # 2枚目から全部取り込み
+            img[i] = cv2.imread(file_list[i], imread_type)
+        print(img_folder + "から" + str(i + 1) + "枚取り込みました．")
     return img
 
 
-def save_imgs(save_folder, img, file_name='', extension='tif', idx='ALL'):
+def save_imgs(save_folder, img, file_name="", extension="tif", idx="ALL", stack=True):
+    """Save images.
+
+    Args:
+        save_folder: This function can create folders.
+        img: numpy array
+        file_name: Serial numbers and extensions are added automatically.
+        extension: tif or png (default: {'tif'})
+        idx: Index of image to save. One-dimensional list. (default: {'ALL'})
+        stack: Whether to save as tif stack. Valid only for tif. (default: {True})
+    """
     # 画像スタックになっている配列から，save_folderに画像を保存．
-    if idx == 'ALL':
+    if idx == "ALL":
         idx = np.arange(img.shape[0])
     if idx.size == 0:
-        print(save_folder + 'に保存する画像がありません')
+        print(save_folder + "に保存する画像がありません")
         return 0
     if os.path.exists(save_folder) is False:
         os.makedirs(save_folder)
-    if extension == 'png':  # pngなんだから非圧縮で保存しようよ
+    if extension == "png":  # pngなんだから非圧縮で保存しようよ
         for i in idx:
-            Image.fromarray(img[i]).save(os.path.join(save_folder, file_name + str(i).zfill(3) + '.' + extension))
-    else:  # tifはデフォルト非圧縮 jpgは圧縮される．
+            Image.fromarray(img[i]).save(
+                os.path.join(save_folder, file_name + str(i).zfill(3) + ".png")
+            )
+    elif extension == "tif" and not stack:  # tifはデフォルト非圧縮 jpgは圧縮される．
         for i in idx:
-            Image.fromarray(img[i]).save(os.path.join(save_folder, file_name + str(i).zfill(3) + '.' + extension))
-    print(str(save_folder) + 'に保存しました')
+            Image.fromarray(img[i]).save(
+                os.path.join(save_folder, file_name + str(i).zfill(3) + ".tif")
+            )
+    elif extension == "tif" and stack:
+        stack = []
+        for i in idx:
+            stack.append(Image.fromarray(img[i]))
+        stack[0].save(
+            os.path.join(save_folder, file_name + ".tif"),
+            compression="tiff_deflate",
+            save_all=True,
+            append_images=stack[1:],
+        )
+    print(str(save_folder) + "に保存しました")
 
 
 def bit1628(img):  # 16bit 画像を8bit画像に
     if np.max(img) > 255 or np.min(img) >= 10:
-        img8 = ((img - np.min(img)) / (np.max(img) - np.min(img)) * 255).astype(np.uint8)
+        img8 = ((img - np.min(img)) / (np.max(img) - np.min(img)) * 255).astype(
+            np.uint8
+        )
     else:
         img8 = img.astype(np.uint8)
     return img8
@@ -92,9 +123,15 @@ def mesh_imgs(folder, mesh=5):
     # 画像のフォルダから画像を全部読み込んできて，全てメッシュ化してしまおう！
     img = read_imgs(folder)
     # 以下メッシュ化するよ！
-    meshed = np.empty((img.shape[0], int(img.shape[1] / mesh), int(img.shape[2] / mesh)))
-    for i, j in itertools.product(np.arange(int(img.shape[1] / mesh)), np.arange(int(img.shape[2] / mesh))):
-        meshed[::, i, j] = img[::, i * mesh:(i + 1) * mesh, j * mesh:(j + 1) * mesh].mean(axis=(1, 2))
+    meshed = np.empty(
+        (img.shape[0], int(img.shape[1] / mesh), int(img.shape[2] / mesh))
+    )
+    for i, j in itertools.product(
+        np.arange(int(img.shape[1] / mesh)), np.arange(int(img.shape[2] / mesh))
+    ):
+        meshed[::, i, j] = img[
+            ::, i * mesh : (i + 1) * mesh, j * mesh : (j + 1) * mesh
+        ].mean(axis=(1, 2))
     return meshed
 
 
@@ -103,13 +140,18 @@ def past_img(img, img2, margin=0, dtype=np.uint16, folder=False):
     if folder != 0:  # 読み込み
         img, img2 = read_imgs(img), read_imgs(img2)
     if img.ndim == 2:  # 一枚だけの画像のとき
-        new_img = np.empty((img.shape[0], img.shape[1] + margin + imgs.shape[1]), dtype=dtype)
-        new_img[:, :img.shape[1]] = img
-        new_img[:, -img2.shape[1]:] = img2
+        new_img = np.empty(
+            (img.shape[0], img.shape[1] + margin + imgs.shape[1]), dtype=dtype
+        )
+        new_img[:, : img.shape[1]] = img
+        new_img[:, -img2.shape[1] :] = img2
     else:
-        new_img = np.empty((img.shape[0], img.shape[1], img.shape[2] + margin + img.shape[2]), dtype=dtype)
-        new_img[:, :, :img.shape[2]] = img
-        new_img[:, :, -img2.shape[2]:] = img2
+        new_img = np.empty(
+            (img.shape[0], img.shape[1], img.shape[2] + margin + img.shape[2]),
+            dtype=dtype,
+        )
+        new_img[:, :, : img.shape[2]] = img
+        new_img[:, :, -img2.shape[2] :] = img2
     return new_img
 
 
@@ -120,4 +162,4 @@ if __name__ == "__main__":
     imgs[2, :] = np.arange(0, 1, 0.01)
     color = make_color(imgs)
     print(color)
-    cv2.imwrite('color.tif', color)
+    cv2.imwrite("color.tif", color)
