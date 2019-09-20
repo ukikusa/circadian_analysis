@@ -99,8 +99,8 @@ def label2frond(folder, out_folder, lum_folder=False, size=160):
                 os.path.join(save_folder, "stats.csv")
             )
             if lum_folder is not False:
-                im.save_imgs(save_folder + "/mask_frond_lum", lum_img_mask)
-                im.save_imgs(save_folder + "/frond_lum", lum_img)
+                im.save_imgs(save_folder, lum_img_mask, file_name="mask_frond_lum.tif")
+                im.save_imgs(save_folder, lum_img, file_name="frond_lum.tif")
     sr = pd.DataFrame({"s_idx": s_idx, "e_idx": e_idx}, index=frond_idx)
     sr.to_csv(os.path.join(os.path.split(out_folder)[0], "frond_number.csv"))
 
