@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image  # Pillowの方を入れる．PILとは共存しない
 
 
-def read_imgs(img_folder, color=False, extension="tif", stack=True):  # 画像入っているフォルダ
+def read_imgs(img_folder, color=False, extension="tif"):  # 画像入っているフォルダ
     if not os.path.exists(img_folder):
         print(img_folder + "がありません")
         sys.exit()
@@ -19,9 +19,10 @@ def read_imgs(img_folder, color=False, extension="tif", stack=True):  # 画像�
         imread_type = cv2.IMREAD_GRAYSCALE | cv2.IMREAD_ANYDEPTH
     elif color is True:  # カラー読むとき
         imread_type = cv2.IMREAD_COLOR
-    if stack:
-        ref, img = cv2.imreadmulti(img_folder, flags=imread_type)
-    if not stack:
+    if os.path.isfile(img_folder):
+        _, img = cv2.imreadmulti(img_folder, flags=imread_type)
+        img = np.array(img)
+    elif os.path.isdir(img_folder):
         file_list = sorted(glob.glob(os.path.join(img_folder, "*." + extension)))
         tmp = cv2.imread(file_list[0], imread_type)  # 1枚目
         img = np.empty(
@@ -34,7 +35,7 @@ def read_imgs(img_folder, color=False, extension="tif", stack=True):  # 画像�
     return img
 
 
-def save_imgs(save_folder, img, file_name="", extension="tif", idx="ALL", stack=True):
+def save_imgs(save_folder, img, file_name="", extension="tif", idx="ALL"):
     """Save images.
 
     Args:
@@ -58,21 +59,22 @@ def save_imgs(save_folder, img, file_name="", extension="tif", idx="ALL", stack=
             Image.fromarray(img[i]).save(
                 os.path.join(save_folder, file_name + str(i).zfill(3) + ".png")
             )
-    elif extension == "tif" and not stack:  # tifはデフォルト非圧縮 jpgは圧縮される．
-        for i in idx:
-            Image.fromarray(img[i]).save(
-                os.path.join(save_folder, file_name + str(i).zfill(3) + ".tif")
-            )
-    elif extension == "tif" and stack:
+    elif os.path.splitext(file_name)[1] == ".tif":
         stack = []
         for i in idx:
             stack.append(Image.fromarray(img[i]))
         stack[0].save(
-            os.path.join(save_folder, file_name + ".tif"),
+            os.path.join(save_folder, file_name),
             compression="tiff_deflate",
             save_all=True,
             append_images=stack[1:],
         )
+    elif extension == "tif":  # tifはデフォルト非圧縮 jpgは圧縮される．
+        for i in idx:
+            Image.fromarray(img[i]).save(
+                os.path.join(save_folder, file_name + str(i).zfill(3) + ".tif")
+            )
+
     print(str(save_folder) + "に保存しました")
 
 
