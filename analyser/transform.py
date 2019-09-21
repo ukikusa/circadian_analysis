@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """Function to correct front movement."""
 
-import glob
+
 import os
 import sys
 import tkinter as tk
 
 import cv2
 import numpy as np
-import pandas as pd
+# import pandas as pd
 from PIL import Image, ImageTk
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -34,7 +34,7 @@ class CheckRotationGui:
         print(img)
         tk.Label(self.tki, image=img, text=str(self.angle) + "度回転しました．-90〜90度の回転になります．", compound="top").pack(side="top")
         var = tk.IntVar()  # チェックの有無変数
-        rdo_box = ["これで良い", "これで良い", "回転角度を指定する"]
+        rdo_box = ["これで良い", "上下反転をする", "回転角度を指定する"]
         var.set(0)
         for i in range(len(rdo_box)):
             tk.Radiobutton(self.tki, value=i, variable=var, text=rdo_box[i]).pack(side="top", anchor="w")
@@ -44,7 +44,9 @@ class CheckRotationGui:
 
         def ok_btn():
             self.a = var.get()
-            if self.a == 2:
+            if self.a == 1:
+                self.angle = self.angle+180
+            elif self.a == 2:
                 self.angle = int(txt.get())
             self.tki.quit()
             self.tki.destroy()
@@ -75,22 +77,20 @@ def img_transformECC(tmp_img, new_img, motionType=1, warp=np.eye(2, 3, dtype=np.
     size = new_img.shape    # 出力画像のサイズを指定
     # 移動を計算
     warp = warp.astype(np.float32)
-    try:  # エラーでたら…
-        #     # (cc, warp_matrix) = cv2.findTransformECC(new_img_8, tmp_img_8, warp, motionType=motionType, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 0.1))
-        cc, warp_matrix = cv2.findTransformECC(new_img_8, tmp_img_8, warp, motionType=motionType, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 0.5))
-        temp = 0
-    except:
-        print('移動に失敗した画像があります')
-        temp = 1
-        warp_matrix = warp
+    for ecc_threshold in range(0.001, 1, 0.005):
+        try:  # エラーでたら…
+            _cc, warp_matrix = cv2.findTransformECC(new_img_8, tmp_img_8, warp, motionType=motionType, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, ecc_threshold))
+        except:
+            pass
+        else:
+            break
     # 元画像に対して，決めた変換メソッドで変換を実行
     out = cv2.warpAffine(new_img_8, warp_matrix, size, flags=cv2.INTER_NEAREST)
     temp = 0
-    # out[np.nonzero(out)] = np.max(out) - temp
     return out, warp, temp
 
 
-def imgs_transformECC_ver2(calc_imgs, motionType=1, align=True):
+def imgs_transformECC(calc_imgs, motionType=1, align=True):
     """Align the direction of frond. The movement is corrected based on the latest images.
 
     Args:
@@ -105,49 +105,50 @@ def imgs_transformECC_ver2(calc_imgs, motionType=1, align=True):
     warps = np.zeros((calc_imgs.shape[0], 2, 3), dtype=np.float64)
     warps[:, 0, 0], warps[:, 1, 1] = 1, 1
     tmp = np.sum(calc_imgs, axis=(1, 2))
-    # roop = np.where(tmp != 0)[0]
     roop = np.where((tmp[:-1] * tmp[1:]) != 0)[0]
     tmp_idx = np.argmax(tmp)
 
     def rotation_reference_image(img):
         """Specify the direction of the frond after rotation."""
         img = img.astype(np.uint8)
-        imgEdge, contours, hierarchy = cv2.findContours(img, 1, 2)
-        w, h, angle = cv2.fitEllipse(contours[0])  # 楕円に近似
+        _imgedge, contours, _hierarchy = cv2.findContours(img, 1, 2)
+        _w, _h, angle = cv2.fitEllipse(contours[0])  # 楕円に近似
         center = tuple((np.array(img.shape) / 2).astype(np.uint16))
-
-        def rotation_by_angle(img, center, angle):
-            warp = cv2.getRotationMatrix2D(center, angle, 1)  # 回転行列を求める
-            out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
-            check = CheckRotationGui(out, angle)
-            a, angle = check.radiobutton_box()
-            if a == 1:
-                warp = cv2.getRotationMatrix2D(center, angle + 180, 1)  # 回転行列を求める
-                out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
-            return out, a, angle, warp
         a = 2
         while a == 2:
-            out, a, angle, warp = rotation_by_angle(img, center, angle)
-        if ((angle + 90) / 180) % 2 == 1:
-            out = out[::-1, ::-1]
-            warp = cv2.getRotationMatrix2D(center, angle + 180, 1)
-        return out, warp
+            if ((angle + 90) / 180) % 2 == 1:
+                warp = cv2.getRotationMatrix2D(center, angle + 180, 1)
+                turn_pi = True
+                out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)[::-1, ::-1]
+            else:
+                warp = cv2.getRotationMatrix2D(center, angle, 1)  # 回転行列を求める
+                turn_pi = False
+                out = cv2.warpAffine(img, warp, img.shape, flags=cv2.INTER_NEAREST)
+            check = CheckRotationGui(out, angle)
+            a, angle = check.radiobutton_box()
+        return out, warp, turn_pi
 
-    if align is True:
-        calc_imgs[tmp_idx], tmp_warp = rotation_reference_image(calc_imgs[tmp_idx])
+    if align is True: # 最大のフロンドを見やすい向きの整形する．
+        calc_imgs[tmp_idx], tmp_warp, trun_pi = rotation_reference_image(calc_imgs[tmp_idx])
         warps[tmp_idx] = np.copy(tmp_warp)
-    for i in range(0, tmp_idx)[::-1]:  # 全部黒ならする必要ない．
-        if i in roop:
-            # calc_imgs[i + 1][np.nonzero(calc_imgs[i + 1])] = np.max(calc_imgs[i])
-            calc_imgs[i], warps[i], _ = img_transformECC(calc_imgs[i + 1], calc_imgs[i], motionType=motionType, warp=tmp_warp)
-            tmp_warp = np.copy(warps[i])
-    tmp_warp = np.copy(warps[tmp_idx])
-    for i in range(tmp_idx, calc_imgs.shape[0] - 1):
-        if i in roop:
-            calc_imgs[i + 1][np.nonzero(calc_imgs[i + 1])] = np.max(calc_imgs[i])
-            calc_imgs[i + 1], warps[i + 1], _ = img_transformECC(calc_imgs[i], calc_imgs[i + 1], motionType=motionType, warp=tmp_warp)
-            tmp_warp = np.copy(warps[i + 1])
-    return calc_imgs, warps, roop
+    else:
+        trun_pi = False
+
+    for i in tmp_idx:
+        calc_imgs[i], warps[i], _ = img_transformECC( calc_imgs[tmp_idx],calc_imgs[i], motionType=motionType, warp=tmp_warp)
+        tmp_warp = np.copy(warps[i])
+    # for i in range(0, tmp_idx)[::-1]:  # 全部黒ならする必要ない．
+    #     if i in roop:
+    #         # calc_imgs[i + 1][np.nonzero(calc_imgs[i + 1])] = np.max(calc_imgs[i])
+    #         calc_imgs[i], warps[i], _ = img_transformECC(calc_imgs[i + 1], calc_imgs[i], motionType=motionType, warp=tmp_warp)
+    #         tmp_warp = np.copy(warps[i])
+    # tmp_warp = np.copy(warps[tmp_idx])
+    # for i in range(tmp_idx, calc_imgs.shape[0] - 1):
+    #     if i in roop:
+    #         # calc_imgs[i + 1][np.nonzero(calc_imgs[i + 1])] = np.max(calc_imgs[i])
+    #         calc_imgs[i + 1], warps[i + 1], _ = img_transformECC(calc_imgs[i], calc_imgs[i + 1], motionType=motionType, warp=tmp_warp)
+    #         tmp_warp = np.copy(warps[i + 1])
+    return calc_imgs, warps, roop, trun_pi
 
 
 def imgs_transformECC_warp(move_imgs, warps):
@@ -168,7 +169,7 @@ def imgs_transformECC_warp(move_imgs, warps):
     return move_imgs
 
 
-def frond_transform(parent_directory, calc_folder="mask_frond", other_folder_list=["mask_frond_lum", 'frond'], motionType=1, align=True):
+def frond_transform(parent_directory, calc_folder="mask_frond.tif", other_folder_list=["mask_frond_lum.tif", 'frond_lum.tif'], motionType=1, align=True):
     """移動補正を一括化
 
     Args:
@@ -178,24 +179,26 @@ def frond_transform(parent_directory, calc_folder="mask_frond", other_folder_lis
         motionType: [description] (default: {1})
     """
     calc_imgs = im.read_imgs(os.path.join(parent_directory, calc_folder))
-    move_img, warps, roops = imgs_transformECC_ver2(calc_imgs, motionType=motionType, align=align)
+    move_img, warps, _roops, trun_pi = imgs_transformECC(calc_imgs, motionType=motionType, align=align)
     im.save_imgs(os.path.join(parent_directory, "moved_" + calc_folder), move_img)
     for i in other_folder_list:
         other_imgs = im.read_imgs(os.path.join(parent_directory, i))
         other_imgs = imgs_transformECC_warp(other_imgs, warps=warps)
         im.save_imgs(os.path.join(parent_directory, "moved_" + i), other_imgs)
     np.save(os.path.join(parent_directory, 'warps.npy'), warps)
+    with open(os.path.join(parent_directory, "trun_pi"), mode='w') as f:
+        f.write(trun_pi)
 
 if __name__ == '__main__':
     os.chdir(os.path.join("/hdd1", "Users", "kenya", "Labo", "keisan", "python", "00data"))
     # 処理したいデータのフォルダ
-    days = (['./170215-LL2LL-MVX'])
-    # days = (['./170613-LD2LL-ito-MVX', './170829-LL2LL-ito-MVX'])
-    # days = (['./170829-LL2LL-ito-MVX'])
-    for day in days:
-        frond_folder = day + '/frond'
-        folder_list = sorted(glob.glob(frond_folder + '/*'))
-        trance = pd.DataFrame(index=[], columns=['first'])
-        for i in folder_list:
-            frond_transform(parent_directory=i, calc_folder="mask_frond", other_folder_list=["mask_frond_lum", 'frond'], motionType=1)
-        trance.to_csv(os.path.join(day, 'tranc.csv'))
+    # days = (['./170215-LL2LL-MVX'])
+    # # days = (['./170613-LD2LL-ito-MVX', './170829-LL2LL-ito-MVX'])
+    # # days = (['./170829-LL2LL-ito-MVX'])
+    # for day in days:
+    #     frond_folder = day + '/frond'
+    #     folder_list = sorted(glob.glob(frond_folder + '/*'))
+    #     trance = pd.DataFrame(index=[], columns=['first'])
+    #     for i in folder_list:
+    #         frond_transform(parent_directory=i, calc_folder="mask_frond", other_folder_list=["mask_frond_lum", 'frond'], motionType=1)
+    #     trance.to_csv(os.path.join(day, 'tranc.csv'))
