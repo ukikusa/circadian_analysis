@@ -35,7 +35,7 @@ def read_imgs(img_folder, color=False, extension="tif"):  # 画像入ってい�
     return img
 
 
-def save_imgs(save_folder, img, file_name="", extension="tif", idx="ALL"):
+def save_imgs(save_folder, img=False, file_name="", extension="tif", idx="ALL"):
     """Save images.
 
     Args:
