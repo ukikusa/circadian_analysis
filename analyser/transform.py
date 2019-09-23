@@ -120,7 +120,7 @@ def imgs_transformECC(calc_imgs, motionType=1, align=True):
     # 移動補正をまとめた．
     warps = np.zeros((calc_imgs.shape[0], 2, 3), dtype=np.float64)
     warps[:, 0, 0], warps[:, 1, 1] = 1, 1
-    moved_imgs = np.empty_like(calc_imgs)
+    moved_imgs = np.zeros_like(calc_imgs)
     tmp = np.sum(calc_imgs, axis=(1, 2))
     roop = np.where(tmp != 0)[0]
     # roop = np.where((tmp[:-1] * tmp[1:]) != 0)[0]
