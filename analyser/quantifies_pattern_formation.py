@@ -40,6 +40,34 @@ def morans_i(img, decay=-2):
     return m_i
 
 
+def morans_i(img, decay=-2):
+    """Function to caliculate Moran’s I from phase image.
+
+    Args:
+        img (np.float): A numpy array with phases defined from 0 to 1.
+        decay (int, optional): The decay parameter specifying the typical interaction range.
+. Defaults to -2.
+
+    Returns:
+         Moran’s I : float
+    """
+    coordinate = np.where(~np.isnan(img) * img >= 0)
+    phase_data = img[coordinate] * 2 * np.pi
+    coordinate_np = np.array(coordinate).T
+    weight = cdist(coordinate_np, coordinate_np)  # 距離を求める
+    weight[weight != 0] = weight[weight != 0] ** decay
+    phase_mean = np.arctan2(np.sum(np.sin(phase_data)), np.sum(np.cos(phase_data)))
+    diff_phase = np.arctan2(
+        np.sin(phase_data - phase_mean), np.cos(phase_data - phase_mean)
+    )  # meanとの引き算を先にする
+    m_i = (
+        np.sum(weight * np.outer(diff_phase, diff_phase))
+        / np.average(np.square(diff_phase))
+        / np.sum(weight)
+    )
+    return m_i
+
+
 def mi_time_series(imgs, mi_df=pd.DataFrame(), colome="MI"):
     """Function to caliculate Moran’s I from phase images.
 
@@ -51,20 +79,21 @@ def mi_time_series(imgs, mi_df=pd.DataFrame(), colome="MI"):
     Returns:
         data frame: mi dataframe
     """
-    mi_np = np.empty((imgs.shape[0]), dtype=np.float64)
-    for i in range(imgs.shape[0]):
+    mi_np = np.full((imgs.shape[0]), np.nan, dtype=np.float64)
+    roop = np.where(np.sum(~np.isnan(imgs), axis=(1, 2)) > 20)[0]
+    for i in roop:
         mi_np[i] = morans_i(imgs[i])
     mi_df[colome] = mi_np
     return mi_df
 
 
-def mi_fronds(file_list):
+def mi_fronds(file_list, label="mi"):
     """Test"""
     mi_df = pd.DataFrame()
-    for i in file_list:
-        imgs = np.load(file_list[i])
+    for file_i in file_list:
+        imgs = np.load(file_i)
         mi_df = mi_time_series(
-            imgs, mi_df, os.path.splitext(os.path.basename(file_list[i]))[0]
+            imgs, mi_df, os.path.basename(os.path.dirname((os.path.dirname(file_i))))
         )
     return mi_df
 
@@ -81,4 +110,4 @@ if __name__ == "__main__":
     # data[np.where(~np.isnan(data) * data >= 0)] = np.random.rand(
     #     data[np.where(~np.isnan(data) * data >= 0)].size
     # )
-    MI_DF = mi_time_series(DATA, mi_df=pd.DataFrame(), colome="MI")
+    mi_df = mi_time_series(DATA, mi_df=pd.DataFrame(), colome="MI")

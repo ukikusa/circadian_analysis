@@ -222,15 +222,15 @@ def peak_img_list(peak_img, per_ber=10, m=5, fold=24):
     return peak_img
 
 
-def img_analysis_pdf(save_folder, tau, r2, cv, sd, distance_center=True, dt=60):
+def img_analysis_pdf(save_folder, tau, cv, sd, distance_center=True, dt=60, time=True):
     """作図．諸々の解析の.
-
     周期の画像を投げられて，Distance_centerからの距離を測る
     """
     if os.path.exists(save_folder) is False:
         os.makedirs(save_folder)
     # 解析する対象の時間．
-    time = np.arange(0, tau.shape[0], 24 * 60 / dt).astype(np.uint8)
+    if time:
+        time = np.arange(0, tau.shape[0], 24 * 60 / dt).astype(np.uint8)
     # 使うデータだけに絞る
     tau = tau[time]
     tau_nan = np.logical_or(np.isnan(tau), tau <= 0)
@@ -264,8 +264,8 @@ def img_analysis_pdf(save_folder, tau, r2, cv, sd, distance_center=True, dt=60):
             y=tau[i][~tau_nan[i]],
             min_x=0,
             max_x=None,
-            min_y=0,
-            max_y=50,
+            min_y=16,
+            max_y=32,
             max_hist_x=200,
             max_hist_y=200,
             bin_hist_x=200,
@@ -472,7 +472,14 @@ def img_pixel_theta(
             save, color_tau, "tau_" + str(max_tau) + "-" + str(min_tau) + "h.tif"
         )
         im.save_imgs(
-            save, color_cv, "cv_" + str(np.nanmax(cv)) + "-" + str(np.min(cv)) + ".tif"
+            save,
+            color_cv,
+            "cv_" + str(np.nanmax(cv)) + "-" + str(np.nanmin(cv)) + ".tif",
+        )
+        im.save_imgs(
+            save,
+            color_sd,
+            "sd_" + str(np.nanmax(sd)) + "-" + str(np.nanmin(sd)) + ".tif",
         )
         Image.fromarray(color_legend).save(
             os.path.join(save, "color_legend.png"), compress_level=0
@@ -484,6 +491,7 @@ def img_pixel_theta(
         np.save(os.path.join(save, "theta.npy"), peak_a[0])
         np.save(os.path.join(save, "tau.npy"), imgs_tau)
         np.save(os.path.join(save, "cv.npy"), cv)
+        np.save(os.path.join(save, "sd.npy"), sd)
         if pdf is not False:
             if pdf is True:
                 pdf = os.path.join(save, "pdf")
@@ -492,7 +500,6 @@ def img_pixel_theta(
             img_analysis_pdf(
                 save_folder=pdf,
                 tau=peak_a[1],
-                r2=peak_a[2],
                 cv=cv,
                 sd=sd,
                 distance_center=distance_center,
@@ -699,19 +706,7 @@ def img_circadian_analysis(
             + str(avg),
         )
     ):
-        print(
-            os.path.join(
-                folder,
-                "FFT_nlls",
-                str(calc_range[0])
-                + "h-"
-                + str(calc_range[1])
-                + "h_mesh-"
-                + str(mesh)
-                + "_avg-"
-                + str(avg),
-            )
-        )
+
         img_fft_nlls(calc_range=calc_range, avg=avg, tau_range=[16, 30], **args)
 
 
