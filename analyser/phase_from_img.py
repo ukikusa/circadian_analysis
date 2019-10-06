@@ -118,7 +118,7 @@ def make_theta_imgs(
         min_tau=min_tau,
         max_tau=max_tau,
     )
-    cv, sd = pa.amp_analysis(imgs[:, use_xy[0], use_xy[1]], int(60 / dt * amp_r))
+    cv, sd, rms = pa.amp_analysis(imgs[:, use_xy[0], use_xy[1]], int(60 / dt * amp_r))
     ###############################
     # 出力
     ###############################
@@ -130,20 +130,26 @@ def make_theta_imgs(
     tau_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
     cv_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
     sd_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
+    rms_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
+
     theta_imgs[:, use_xy[0], use_xy[1]] = peak_a[2]
     tau_imgs[:, use_xy[0], use_xy[1]] = peak_a[6]
     cv_imgs[:, use_xy[0], use_xy[1]] = cv
     sd_imgs[:, use_xy[0], use_xy[1]] = sd
+    rms_imgs[:, use_xy[0], use_xy[1]] = rms
+
     if mask_img is False:
         theta_imgs[np.logical_and(np.isnan(theta_imgs), imgs > 0)] = -1
         tau_imgs[np.logical_and(np.isnan(tau_imgs), imgs > 0)] = -1
         cv_imgs[np.logical_and(np.isnan(cv_imgs), imgs > 0)] = -1
         sd_imgs[np.logical_and(np.isnan(sd_imgs), imgs > 0)] = -1
+        rms_imgs[np.logical_and(np.isnan(rms_imgs), imgs > 0)] = -1
     if mask_img is not False:
         theta_imgs[np.isnan(theta_imgs) * mask_img > 0] = -1
         tau_imgs[np.isnan(tau_imgs) * mask_img > 0] = -1
         cv_imgs[np.isnan(cv_imgs) * mask_img > 0] = -1
         sd_imgs[np.isnan(sd_imgs) * mask_img > 0] = -1
+        rms_imgs[np.isnan(rms_imgs) * mask_img > 0] = -1
     return (
         theta_imgs,
         tau_imgs,
@@ -154,6 +160,7 @@ def make_theta_imgs(
         use_xy,
         cv_imgs,
         sd_imgs,
+        rms_imgs,
     )
 
 
@@ -422,7 +429,7 @@ def img_pixel_theta(
         max_tau=max_tau,
     )
     # 位相のデータは醜いので，カラーのデータを返す．
-    cv, sd = peak_a[7], peak_a[8]
+    cv, sd, rms = peak_a[7], peak_a[8], peak_a[9]
     color_theta = im.make_colors(peak_a[0], grey=-1, black=np.nan)
     ###################################
     # 保存用に周期を整形
@@ -437,13 +444,18 @@ def img_pixel_theta(
     color_legend = im.make_color(np.vstack([color_legend, color_legend, color_legend]))
     color_tau = im.make_colors(imgs_tau, grey=-1)
     ####################################
-    # 保存用にCVを整形
+    # 保存用にampを整形
     ####################
     color_cv = cv / np.nanmax(cv) * 0.7
     color_sd = sd / np.nanmax(sd) * 0.7
-    color_cv[cv <= 0], color_sd[sd <= 0] = -1, -1
+    color_rms = rms / np.nanmax(rms) * 0.7
+    color_cv[cv <= 0] = -1
+    color_sd[sd <= 0] = -1
+    color_rms[rms <= 0] = -1
     color_cv = im.make_colors(color_cv, grey=-1)
     color_sd = im.make_colors(color_sd, grey=-1)
+    color_rms = im.make_colors(color_rms, grey=-1)
+
     ####################################
     # Peakの画像の作成
     ####################################
@@ -481,6 +493,11 @@ def img_pixel_theta(
             color_sd,
             "sd_" + str(np.nanmax(sd)) + "-" + str(np.nanmin(sd)) + ".tif",
         )
+        im.save_imgs(
+            save,
+            color_sd,
+            "rms_" + str(np.nanmax(sd)) + "-" + str(np.nanmin(sd)) + ".tif",
+        )
         Image.fromarray(color_legend).save(
             os.path.join(save, "color_legend.png"), compress_level=0
         )
@@ -492,6 +509,8 @@ def img_pixel_theta(
         np.save(os.path.join(save, "tau.npy"), imgs_tau)
         np.save(os.path.join(save, "cv.npy"), cv)
         np.save(os.path.join(save, "sd.npy"), sd)
+        np.save(os.path.join(save, "rms.npy"), rms)
+
         if pdf is not False:
             if pdf is True:
                 pdf = os.path.join(save, "pdf")
@@ -706,7 +725,6 @@ def img_circadian_analysis(
             + str(avg),
         )
     ):
-
         img_fft_nlls(calc_range=calc_range, avg=avg, tau_range=[16, 30], **args)
 
 

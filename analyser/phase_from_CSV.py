@@ -26,6 +26,7 @@ def peak_find_fromCSV(
     peak_t, peak_v, data_phase, r2, peak_point, func, data_period = pa.phase_analysis(
         data, dT, p_range, avg, f_range, offset
     )
+    cv, sd = pa.amp_analysis(data, h_range=24 * 3 * 60 // dT)
     if pdf_save != False:
         mf.multi_plot(
             x=time,
@@ -37,16 +38,19 @@ def peak_find_fromCSV(
             label=dataframe.columns,
         )
     peak_t[peak_t == 0] = np.nan
-    peak_t, peak_v, data_phase, r2 = (
-        pd.DataFrame(peak_t),
-        pd.DataFrame(peak_v),
-        pd.DataFrame(data_phase),
-        pd.DataFrame(r2.T),
-    )
+    peak_t = pd.DataFrame(peak_t)
+    peak_v = pd.DataFrame(peak_v)
+    data_phase = pd.DataFrame(data_phase)
+    r2 = pd.DataFrame(r2.T)
+    cv = pd.DataFrame(cv)
+    sd = pd.DataFrame(sd)
+
     col = list(dataframe.columns)
     peak_t.columns = col
     peak_v.columns = col
     data_phase.columns = col
+    cv.columns = col
+    sd.columns = col
     # r2.colums = col
     data_phase.index = time
     csv_save = os.path.join(
@@ -60,6 +64,8 @@ def peak_find_fromCSV(
     peak_v.to_csv(csv_save + "_value.csv")
     # pcov_csv.index = dataframe.index
     r2.to_csv(csv_save + "r2.csv")
+    cv.to_csv(csv_save + "cv.csv")
+    sd.to_csv(csv_save + "sd.csv")
     return peak_t, peak_v, data_phase, r2
 
 

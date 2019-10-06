@@ -40,34 +40,6 @@ def morans_i(img, decay=-2):
     return m_i
 
 
-def morans_i(img, decay=-2):
-    """Function to caliculate Moran’s I from phase image.
-
-    Args:
-        img (np.float): A numpy array with phases defined from 0 to 1.
-        decay (int, optional): The decay parameter specifying the typical interaction range.
-. Defaults to -2.
-
-    Returns:
-         Moran’s I : float
-    """
-    coordinate = np.where(~np.isnan(img) * img >= 0)
-    phase_data = img[coordinate] * 2 * np.pi
-    coordinate_np = np.array(coordinate).T
-    weight = cdist(coordinate_np, coordinate_np)  # 距離を求める
-    weight[weight != 0] = weight[weight != 0] ** decay
-    phase_mean = np.arctan2(np.sum(np.sin(phase_data)), np.sum(np.cos(phase_data)))
-    diff_phase = np.arctan2(
-        np.sin(phase_data - phase_mean), np.cos(phase_data - phase_mean)
-    )  # meanとの引き算を先にする
-    m_i = (
-        np.sum(weight * np.outer(diff_phase, diff_phase))
-        / np.average(np.square(diff_phase))
-        / np.sum(weight)
-    )
-    return m_i
-
-
 def mi_time_series(imgs, mi_df=pd.DataFrame(), colome="MI"):
     """Function to caliculate Moran’s I from phase images.
 
@@ -96,6 +68,32 @@ def mi_fronds(file_list, label="mi"):
             imgs, mi_df, os.path.basename(os.path.dirname((os.path.dirname(file_i))))
         )
     return mi_df
+
+
+def phase2oder(phase_data):
+    # phaseのデータを投げたら同期率Rと位相のリストを返す関数.2次元配列のみ対応．
+    # オイラー展開（でいいのかな）するよ
+    euler_data = np.full_like(phase_data, np.nan, dtype=np.complex)
+    use_idx = [np.logical_and(phase_data != -1, ~np.isnan(phase_data))]
+    euler_data[use_idx] = np.exp(1j * phase_data[use_idx] * 2 * np.pi)
+    # 余裕がアレば，位相の画像返してあげてもいいね．
+    R = np.abs(np.nanmean(euler_data, axis=(1, 2)))
+    gomi = (
+        np.sum(np.logical_and(phase_data != -1, ~np.isnan(phase_data)), axis=(1, 2))
+        < 20
+    )
+    R[gomi] = np.nan
+    return R
+
+
+def fronds_phase2oder(file_list):
+    oder_df = pd.DataFrame()
+    for file_i in file_list:
+        phase_i = np.load(file_i)
+        oder_df[
+            os.path.basename(os.path.dirname((os.path.dirname(file_i))))
+        ] = phase2oder(phase_i)
+    return oder_df
 
 
 if __name__ == "__main__":

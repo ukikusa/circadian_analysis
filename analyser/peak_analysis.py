@@ -20,6 +20,7 @@ def amp_analysis(data, h_range=24 * 3):
     cv = np.full_like(data, np.nan)
     data[data == 0] = np.nan
     sd = np.copy(cv)
+    rms = np.copy(cv)
     n = data.shape[0]
     n_e = n - range_2
     for i in range(range_2, n_e):
@@ -27,7 +28,8 @@ def amp_analysis(data, h_range=24 * 3):
         sd_i = np.std(data_i, axis=0)
         sd[i] = sd_i
         cv[i] = sd_i / np.average(data_i, axis=0)
-    return cv, sd
+        rms[i] = np.sqrt(np.mean(np.square(data_i), axis=0))
+    return cv, sd, rms
 
 
 def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0):
