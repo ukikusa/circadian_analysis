@@ -16,7 +16,7 @@ import matplotlib as mpl
 mpl.use("Agg")
 
 
-def phase_diff(phase_img, pp=False, scale=0.033, title="", x_max=4.5, x_range=0.05):
+def phase_diff(phase_img, pp=False, scale=0.033, title="", x_max=3.5, x_range=0.05):
     """Phase diff - distance from image."""
     x, y = np.where(~np.isnan(phase_img) * phase_img >= 0)  # 位相が定義されている座標
     xy = np.array((x, y)).T
@@ -29,7 +29,8 @@ def phase_diff(phase_img, pp=False, scale=0.033, title="", x_max=4.5, x_range=0.
     dis = dis * scale
     diff = np.abs(phase_d[xx[tri_dx]] - phase_d[yy[tri_dx]])  # 位相差
     diff[diff > 0.5] = 1 - diff[diff > 0.5]
-
+    if not os.path.exists(os.path.dirname(pp)):
+        os.makedirs(os.path.dirname(pp))
     if pp is not False:  # pdfの保存
         fig = plt.figure(figsize=(11.69, 8.27), dpi=100)
         sc_bottom = sc_left = 0.1
@@ -51,6 +52,8 @@ def phase_diff(phase_img, pp=False, scale=0.033, title="", x_max=4.5, x_range=0.
             positions=x_avg + x_range * 0.5,
             showmeans=True,
             meanline=True,
+            meanprops=dict(color="g", linewidth=2),
+            medianprops=dict(color="r", linewidth=2),
             whis="range",
             widths=x_range,
             whiskerprops=whiskerprops,
@@ -73,7 +76,7 @@ def phase_diff(phase_img, pp=False, scale=0.033, title="", x_max=4.5, x_range=0.
         ax_x.set_ylim(bottom=0)
 
         ax_x.set_title(title)
-        plt.savefig(pp, format="pdf")
+        plt.savefig(pp)
         fig.clf()
     return diff, dis
 
@@ -84,7 +87,7 @@ def phase_diff_all(
     curve,
     point,
     phase_path="theta.tif",
-    save_path="phase_diff.pdf",
+    save_path="phase_diff.svg",
     scale=1,
     dbg=False,
 ):
@@ -100,9 +103,12 @@ def phase_diff_all(
         phase[~np.isnan(phase)] = np.random.rand(np.sum(~np.isnan(phase)))
     plt.rcParams["font.size"] = 9
     plt.rcParams["font.family"] = "sans-serif"
+    plt.rcParams["xtick.major.width"] = 2.0  # x軸主目盛り線の線幅
+    plt.rcParams["ytick.major.width"] = 2.0  # y軸主目盛り線の線幅
+    plt.rcParams["axes.linewidth"] = 2.0
     pp = os.path.join(data_folder, save_path)
 
-    if np.sum(~np.isnan(phase)) > 10:
+    if np.sum(~np.isnan(phase) * phase >= 0) > 100:
         phase_diff(phase, pp=pp, scale=scale, title=str(point) + "h")
     plt.close()
     return 0
@@ -128,15 +134,13 @@ if __name__ == "__main__":
 
         for label_i in sorted(os.listdir(folder_i)):
             print(label_i)
-            if (
-                frond_idx["use_e_idx"][label_i]
-                > frond_idx["pix_usable_idx"][label_i] + 60
-            ):
+            point = frond_idx["pix_usable_idx"][label_i] + 60
+            if frond_idx["use_e_idx"][label_i] > point:
                 phase_diff_all(
                     folder_i,
                     label_i,
                     CURVE,
-                    save_path="phase_diff.pdf",
-                    point=frond_idx["pix_usable_idx"][label_i] + 60,
+                    save_path=os.path.join("phase_diff", str(point) + "h.svg"),
+                    point=point,
                     scale=0.033,
                 )

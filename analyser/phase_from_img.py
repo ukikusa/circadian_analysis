@@ -495,8 +495,8 @@ def img_pixel_theta(
         )
         im.save_imgs(
             save,
-            color_sd,
-            "rms_" + str(np.nanmax(sd)) + "-" + str(np.nanmin(sd)) + ".tif",
+            color_rms,
+            "rms_" + str(np.nanmax(rms)) + "-" + str(np.nanmin(rms)) + ".tif",
         )
         Image.fromarray(color_legend).save(
             os.path.join(save, "color_legend.png"), compress_level=0
@@ -620,17 +620,17 @@ def img_fft_nlls(
     tau_ampnorm_img[use_xy] = fft_nlls_ampnorm["tau"]
     rae_ampnorm_img[use_xy] = fft_nlls_ampnorm["rae"]
     # カラー画像に
-    tau_dat_img_colure = (
+    tau_dat_img_colour = (
         (tau_dat_img - tau_range[0]) / (tau_range[1] - tau_range[0]) * 0.7
     )
-    tau_ampnorm_img_colure = (
+    tau_ampnorm_img_colour = (
         (tau_ampnorm_img - tau_range[0]) / (tau_range[1] - tau_range[0]) * 0.7
     )
 
     color_legend = np.arange(30) * 0.7 / 30
     color_legend = im.make_color(np.vstack([color_legend, color_legend, color_legend]))
-    tau_dat_img_colure = im.make_color(tau_dat_img_colure, grey=-1)
-    tau_ampnorm_img_colure = im.make_color(tau_ampnorm_img_colure, grey=-1)
+    tau_dat_img_colour = im.make_color(tau_dat_img_colour, grey=-1)
+    tau_ampnorm_img_colour = im.make_color(tau_ampnorm_img_colour, grey=-1)
     ####################################
     # 保存
     ####################
@@ -666,10 +666,10 @@ def img_fft_nlls(
         np.save(os.path.join(save, "fft_rae.npy"), rae_dat_img)
         np.save(os.path.join(save, "fft_ampnorm_tau.npy"), tau_ampnorm_img)
         np.save(os.path.join(save, "fft_ampnorm_rae.npy"), rae_ampnorm_img)
-        Image.fromarray(tau_dat_img_colure).save(save + ".tif")
-        Image.fromarray(tau_ampnorm_img_colure).save(save + "_ampnorm.tif")
-    return tau_dat_img, tau_ampnorm_img, tau_dat_img_colure, tau_ampnorm_img_colure
-    # return tau_ampnorm_img, tau_ampnorm_img_colure
+        Image.fromarray(tau_dat_img_colour).save(save + ".tif")
+        Image.fromarray(tau_ampnorm_img_colour).save(save + "_ampnorm.tif")
+    return tau_dat_img, tau_ampnorm_img, tau_dat_img_colour, tau_ampnorm_img_colour
+    # return tau_ampnorm_img, tau_ampnorm_img_colour
 
 
 def img_circadian_analysis(

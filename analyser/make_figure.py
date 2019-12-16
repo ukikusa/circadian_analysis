@@ -58,6 +58,7 @@ def multi_plot(
     plt_y=4,
     size_x=11.69,
     size_y=8.27,
+    x_max=None,
 ):
     """A function that plots multiple graphs on one page."""
     # yはたくさんある前提.
@@ -75,16 +76,28 @@ def multi_plot(
     ##############
 
     def plot_data(
-        fig, ax, x, y, y_min=y_min, plt_x=plt_x, plt_y=plt_y, i=0, label=False
+        fig,
+        ax,
+        x,
+        y,
+        y_min=y_min,
+        plt_x=plt_x,
+        plt_y=plt_y,
+        i=0,
+        label=False,
+        x_max=x_max,
     ):
         # print(ax)
         ax.append(fig.add_subplot(plt_x, plt_y, i + 1))
         # プロット
         ax[i].plot(x, y, linewidth=0, marker=".")
         # 軸の調整とか
-        ax[i].set_xlim(left=0)  # x軸
+        if x_max == None:
+            x_max = x[-1]
+        ax[i].set_xlim(left=0, right=x_max)  # x軸
         ax[i].set_ylim(y_min, y_max)  # y軸
-        ax[i].set_xticks(np.arange(0, x[-1], 24) - x[0])  # メモリ
+
+        ax[i].set_xticks(np.arange(0, x_max, 24))  # メモリ
         ax[i].grid(
             which="major", axis="x", color="k", linestyle="dotted", lw=0.5
         )  # 縦の補助線
@@ -243,6 +256,8 @@ def make_hst_fig(
             positions=(x_avg + box * 0.5),
             showmeans=True,
             meanline=True,
+            meanprops=dict(color="g", linewidth=2),
+            medianprops=dict(color="r", linewidth=2),
             whis="range",
             widths=box,
             whiskerprops=whiskerprops,
