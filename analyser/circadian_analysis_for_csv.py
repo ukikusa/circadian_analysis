@@ -14,20 +14,22 @@ from analyser.make_figure import multi_plot
 
 
 def circadian_analysis_for_csv(
-    file, avg, dt_m=60, p_range=6, fit_range=4, save_f=False, pdf=False, offset=0
+    file, avg, save_f, dt_m=60, p_range=6, fit_range=4, pdf=False, offset=0, s=48, e=120
 ):
     """[summary]
-
+    
     Args:
         file ([type]): [description]
         avg ([type]): [description]
+        save_f ([type]): [description]
         dt_m (int, optional): [description]. Defaults to 60.
         p_range (int, optional): [description]. Defaults to 6.
         fit_range (int, optional): [description]. Defaults to 4.
-        csv_save (bool, optional): [description]. Defaults to False.
-        pdf_save (bool, optional): [description]. Defaults to False.
+        pdf (bool, optional): [description]. Defaults to False.
         offset (int, optional): [description]. Defaults to 0.
-
+        s (int, optional): [description]. Defaults to 48.
+        e (int, optional): [description]. Defaults to 120.
+    
     Returns:
         [type]: [description]
     """
@@ -46,7 +48,7 @@ def circadian_analysis_for_csv(
     peak_t, peak_v, data_phase, r2_np, peak_point, func, _ = phase_analysis(
         data_np, avg, dt_m, p_range, fit_range, offset
     )
-    cv_np, _sd_np = amp_analysis(data_np, h_range=24 * 3)
+    cv_np, _sd_np, _rms_np = amp_analysis(data_np, h_range=24 * 3)
     data_det, data_det_ampnorm = data_norm(data_np, dt=dt_m)
     fft_nlls = cos_fit(data_det, s=48, e=120, dt=dt_m)
     fft_nlls_ampnorm = cos_fit(data_det_ampnorm, s=48, e=120, dt=dt_m)
@@ -77,14 +79,22 @@ def circadian_analysis_for_csv(
     if save_f is not False:
         if not os.path.exists(os.path.dirname(save_f)):
             os.mkdir(os.path.dirname(save_f))
+        if not os.path.exists(save_f):
+            os.mkdir(save_f)
         peak_t.to_csv(save_f + "peak.csv")
         data_phase.to_csv(save_f + "phase.csv")
         peak_v.to_csv(save_f + "value.csv")
         r2_pd.to_csv(save_f + "r2.csv")
         cv_pd.to_csv(save_f + "cv.csv")
-        np.savetxt(save_f + "data_det_ampnorm.csv", data_det_ampnorm, delimiter=",")
-        fft_nlls.to_csv(save_f + "fft_nlls.csv")
-        fft_nlls_ampnorm.to_csv(save_f + "fft_nlls_ampnorm.csv")
+        np.savetxt(
+            os.path.join(save_f, "data_det_ampnorm.csv"),
+            data_det_ampnorm,
+            delimiter=",",
+        )
+        fft_nlls.to_csv(os.path.join(save_f, str(s) + "h-" + str(e) + "h_fft_nlls.csv"))
+        fft_nlls_ampnorm.to_csv(
+            os.path.join(save_f, str(s) + "h-" + str(e) + "h_fft_nlls_ampnorm.csv")
+        )
     return peak_t, peak_v, data_phase, r2_pd, cv_pd
 
 
