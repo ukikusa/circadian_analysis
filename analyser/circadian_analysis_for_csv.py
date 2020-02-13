@@ -48,7 +48,7 @@ def circadian_analysis_for_csv(
     peak_t, peak_v, data_phase, r2_np, peak_point, func, _ = phase_analysis(
         data_np, avg, dt_m, p_range, fit_range, offset
     )
-    cv_np, _sd_np, _rms_np = amp_analysis(data_np, h_range=24 * 3)
+    cv_np, _sd_np, rms_np = amp_analysis(data_np, h_range=24 * 3)
     data_det, data_det_ampnorm = data_norm(data_np, dt=dt_m)
     fft_nlls = cos_fit(data_det, s=48, e=120, dt=dt_m)
     fft_nlls_ampnorm = cos_fit(data_det_ampnorm, s=48, e=120, dt=dt_m)
@@ -73,14 +73,15 @@ def circadian_analysis_for_csv(
     data_phase = pd.DataFrame(data_phase, columns=col, index=time)
     r2_pd = pd.DataFrame(r2_np, columns=col)
     cv_pd = pd.DataFrame(cv_np, columns=col, index=time)
+    rms_pd = pd.DataFrame(rms_np, columns=col, index=time)
     fft_nlls.index = col
     fft_nlls_ampnorm.index = col
 
     if save_f is not False:
         if not os.path.exists(os.path.dirname(save_f)):
-            os.mkdir(os.path.dirname(save_f))
+            os.makedirs(os.path.dirname(save_f))
         if not os.path.exists(save_f):
-            os.mkdir(save_f)
+            os.makedirs(save_f)
         peak_t.to_csv(save_f + "peak.csv")
         data_phase.to_csv(save_f + "phase.csv")
         peak_v.to_csv(save_f + "value.csv")
@@ -95,7 +96,7 @@ def circadian_analysis_for_csv(
         fft_nlls_ampnorm.to_csv(
             os.path.join(save_f, str(s) + "h-" + str(e) + "h_fft_nlls_ampnorm.csv")
         )
-    return peak_t, peak_v, data_phase, r2_pd, cv_pd
+    return peak_t, peak_v, data_phase, r2_pd, cv_pd, rms_pd
 
 
 if __name__ == "__main__":
