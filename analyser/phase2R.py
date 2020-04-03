@@ -6,6 +6,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
@@ -28,6 +29,14 @@ def phase2R(phase_data):
 
 
 def phase2Rs(data):
+    """(i,j)行列ならi個のRだす．(i,j,k)行列ならiこのRを出す．
+    
+    Args:
+        data ([numpy]): 位相は0-1
+    
+    Returns:
+        [type]: [description]
+    """
     r, number, euler_datas = [], [], []
     for i in range(data.shape[0]):
         if data.ndim == 3:

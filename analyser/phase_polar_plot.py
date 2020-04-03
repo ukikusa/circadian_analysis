@@ -6,6 +6,8 @@ import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
 import pandas as pd
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
@@ -67,7 +69,9 @@ def phase3_plot(theta, r=False):
     plt.savefig("tmp.pdf")
 
 
-def r3_plot(theta, theta_all, r=False, r_all=False, pdf_save=False):
+def r3_plot(
+    theta, theta_all, blue=False, r=False, r_all=False, pdf_save=False, hozyo=False
+):
     """フロンド毎の位相と位相と全体の位相を投げると極座標プロットする．削除できそうな関数
     3つまでしかプロットできない
     
@@ -86,7 +90,10 @@ def r3_plot(theta, theta_all, r=False, r_all=False, pdf_save=False):
         r = np.ones_like(np.array(theta.values))
     plt.figure(figsize=(7, 5), dpi=100)  # A4余裕あり．かつ半分
     for (i, s) in enumerate(theta.index):
-        plt.subplot(2, 3, i + 1, projection="polar")
+        plt.subplot(1, 3, i + 1, projection="polar")
+        # 外周．実践にしたいので円で書く．
+        plt.polar(np.linspace(0, 2 * np.pi, 100), [1] * 100, lw=1, color="k", marker="")
+        # plot　黒で
         plt.polar(
             theta.values[i, :],
             r[i, :],
@@ -94,25 +101,39 @@ def r3_plot(theta, theta_all, r=False, r_all=False, pdf_save=False):
             lw=0,
             marker=".",
             markersize=10,
-            mec="b",
-            mfc="b",
+            mec="k",
+            mfc="k",
             label=s,
         )  # 極座標グラフのプロット
+        if blue is not False:  # 別の色でプロットしたい場合
+            r_b = np.ones_like(np.array(blue.values))
+            plt.polar(
+                blue.values[i, :],
+                r_b[i, :],
+                color="w",
+                lw=0,
+                marker=".",
+                markersize=10,
+                mec="b",
+                mfc="b",
+                label=s,
+            )  # 極座標グラフのプロット
         plt.polar(
             theta_all[i],
             r_all[i],
-            color="w",
             lw=0,
             marker=".",
             markersize=10,
             mec="r",
             mfc="r",
             label=s,
-        )  # 極座標グラフのプロット
-        plt.ylim(0, 1.1)
-        plt.yticks([0, 1])
-        plt.xlabel(s)
-        plt.grid(which="major", color="black", linestyle="-")
+        )  # 全体のプロット
+        plt.ylim(0, 1.1)  # 1までにすると，1のところにプロットできない
+        if hozyo is not False:  # 有意差を示す補助線．点線にするのはGlidの方がやりやすい．
+            plt.yticks([hozyo[i]])
+
+        plt.xlabel(str(s) + "h; R=" + "{:.2f}".format(r_all[i]))
+        plt.grid(which="major", color="black", linestyle=":")
         plt.xticks(
             np.array([0, np.pi / 2, np.pi, np.pi * 3 / 2, 0]),
             [r"$0$", r"$1/2\pi$", r"$\pi$", r"$3/2\pi$"],
