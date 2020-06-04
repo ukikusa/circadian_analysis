@@ -118,7 +118,9 @@ def make_theta_imgs(
         min_tau=min_tau,
         max_tau=max_tau,
     )
-    cv, sd, rms = pa.amp_analysis(imgs[:, use_xy[0], use_xy[1]], int(60 / dt * amp_r))
+    cv, sd, rms, avg_lum = pa.amp_analysis(
+        imgs[:, use_xy[0], use_xy[1]], int(60 / dt * amp_r)
+    )
     ###############################
     # 出力
     ###############################
@@ -126,6 +128,10 @@ def make_theta_imgs(
     index.extend(range(peak_a[0].shape[0]))
     p_time = pd.DataFrame(np.vstack((use_xy, peak_a[0])), index=index)
     r2 = pd.DataFrame(np.vstack((use_xy, peak_a[3])), index=index)
+
+    # def make_img(imgs, data):
+    #     out_imgs =  np.full_like(imgs, np.nan, dtype=np.float64)
+
     theta_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
     tau_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
     cv_imgs = np.full_like(imgs, np.nan, dtype=np.float64)
@@ -229,7 +235,9 @@ def peak_img_list(peak_img, per_ber=10, m=5, fold=24):
     return peak_img
 
 
-def img_analysis_pdf(save_folder, tau, cv, sd, distance_center=True, dt=60, time=True):
+def img_analysis_pdf(
+    save_folder, tau, cv, sd, distance_center=True, dt=60, time=True, pic=0.33
+):
     """作図．諸々の解析の.
     周期の画像を投げられて，Distance_centerからの距離を測る
     """
@@ -256,7 +264,7 @@ def img_analysis_pdf(save_folder, tau, cv, sd, distance_center=True, dt=60, time
     roops = np.where(np.sum(~tau_nan, axis=(1, 2)) >= 3)[0]
     for i in roops:
         tau_idx = np.array(np.where(~tau_nan[i]))
-        distance = np.linalg.norm((tau_idx.T - distance_center), axis=1)
+        distance = np.linalg.norm((tau_idx.T - distance_center), axis=1) * pic
         title = (
             str(time[i])
             + "(h) center[ "
@@ -684,6 +692,7 @@ def img_circadian_analysis(
     tau_range=[16, 30],
     background=0,
     start_idx=0,
+    fft_nlls=True,
 ):
     mask_frond = im.read_imgs(os.path.join(folder, "moved_mask_frond.tif"))
     mask_frond = img_for_bio(mask_frond)
@@ -712,20 +721,21 @@ def img_circadian_analysis(
         max_tau=30,
         **args
     )
-    if not os.path.exists(
-        os.path.join(
-            folder,
-            "FFT_nlls",
-            str(calc_range[0])
-            + "h-"
-            + str(calc_range[1])
-            + "h_mesh-"
-            + str(mesh)
-            + "_avg-"
-            + str(avg),
-        )
-    ):
-        img_fft_nlls(calc_range=calc_range, avg=avg, tau_range=[16, 30], **args)
+    if fft_nlls is True:
+        if not os.path.exists(
+            os.path.join(
+                folder,
+                "FFT_nlls",
+                str(calc_range[0])
+                + "h-"
+                + str(calc_range[1])
+                + "h_mesh-"
+                + str(mesh)
+                + "_avg-"
+                + str(avg),
+            )
+        ):
+            img_fft_nlls(calc_range=calc_range, avg=avg, tau_range=[16, 30], **args)
 
 
 if __name__ == "__main__":

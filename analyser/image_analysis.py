@@ -62,7 +62,7 @@ def save_imgs(save_folder, img=False, file_name="", extension="tif", idx="ALL"):
     elif os.path.splitext(file_name)[1] == ".tif":
         stack = []
         for i in idx:
-            stack.append(np.uint8(np.asarray(img[i])))
+            stack.append(Image.fromarray(np.asarray(img[i])))
         stack[0].save(
             os.path.join(save_folder, file_name),
             compression="tiff_deflate",

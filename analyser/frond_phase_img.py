@@ -58,7 +58,7 @@ def frond2fig(
         ax1.plot(
             time_move,
             data_move,
-            linewidth=0.2,
+            linewidth=1,
             color=cm.brg(1 - i / data_v.shape[1]),
             label=data.columns[i],
         )
@@ -81,9 +81,14 @@ def frond2fig(
         label="",
         lw=1,
     )
-    ax2 = ax1.twinx()
-    ax2.plot(data.index, all_data, color="k")
-    ax2.set_ylim(bottom=0)
+    # if all_data is not False:
+    #    ax2 = ax1.twinx()
+    #    ax2.plot(data.index, all_data, color="k")
+    #    ax2.set_ylim(bottom=0)
+    if all_data is not False:
+        # ax2 = ax1.twinx()
+        ax1.plot(data.index, all_data, color="k")
+        ax1.set_ylim(bottom=0)
     plt.tick_params(labelbottom="off", labelleft="off")
     plt.tick_params(right="off", top="off")
     plt.xlim([0, 192])
@@ -137,7 +142,7 @@ def make_frond_phase_imgs(imgs, label_imgs, avg, dT=60, p_range=6, f_range=4, sa
             save + "avg.pdf",
             avg=False,
             dT=dT,
-            ymax=6000,
+            ymax=5000,
         )
         avg_df.to_csv(save + "avg.csv")
 
@@ -257,4 +262,3 @@ if __name__ == "__main__":
         f_range=5,
         save=os.path.join(day, "resut", ""),
     )
-

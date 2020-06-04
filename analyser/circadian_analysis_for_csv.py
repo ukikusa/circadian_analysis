@@ -67,7 +67,7 @@ def circadian_analysis_for_csv(
 
     # dataframe に整形
     col = list(data_pd.columns)
-    peak_t[peak_t == 0] = np.nan
+    peak_t[peak_t == 0] = np.nan8
     peak_t = pd.DataFrame(peak_t, columns=col)
     peak_v = pd.DataFrame(peak_v, columns=col)
     data_phase = pd.DataFrame(data_phase, columns=col, index=time)

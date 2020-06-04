@@ -6,9 +6,11 @@ import itertools
 import glob
 import sys
 import pandas as pd
-import image_analysis as im
 import cv2
 import datetime
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+import image_analysis as im
 
 
 def label_change(imgs, change_frame):

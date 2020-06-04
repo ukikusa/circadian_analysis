@@ -4,11 +4,11 @@ import sys
 import numpy as np
 import pandas as pd
 
-# sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-import analysis.image_analysis as im
-import analysis.peak_analysis as pa
-import analysis.make_figure as mf
+import image_analysis as im
+import peak_analysis as pa
+import make_figure as mf
 
 # dataはdata,avgで移動平均．前後p_range分より高い点を暫定ピークに．その時の移動平均がpeak_avg．fit_rangeでフィッティング
 
@@ -26,7 +26,7 @@ def peak_find_fromCSV(
     peak_t, peak_v, data_phase, r2, peak_point, func, data_period = pa.phase_analysis(
         data, dT, p_range, avg, f_range, offset
     )
-    cv, sd = pa.amp_analysis(data, h_range=24 * 3 * 60 // dT)
+    cv, sd, _ = pa.amp_analysis(data, h_range=24 * 3 * 60 // dT)
     if pdf_save != False:
         mf.multi_plot(
             x=time,

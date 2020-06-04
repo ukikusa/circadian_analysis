@@ -130,6 +130,7 @@ def imgs_transformECC(calc_imgs, motionType=1, align=True):
         """Specify the direction of the frond after rotation."""
         img = img.astype(np.uint8)
         _imgedge, contours, _hierarchy = cv2.findContours(img, 1, 2)
+        print(contours[0])
         _w, _h, angle = cv2.fitEllipse(contours[0])  # 楕円に近似
         center = tuple((np.array(img.shape) / 2).astype(np.uint16))
         a = 2

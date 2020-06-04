@@ -21,15 +21,18 @@ def amp_analysis(data, h_range=24 * 3):
     data[data == 0] = np.nan
     sd = np.copy(cv)
     rms = np.copy(cv)
+    avg_lum = np.copy(cv)
     n = data.shape[0]
     n_e = n - range_2
     for i in range(range_2, n_e):
         data_i = data[i - range_2 : i + range_2]
         sd_i = np.std(data_i, axis=0)
+        avg_lum_i = np.average(data_i, axis=0)
         sd[i] = sd_i
-        cv[i] = sd_i / np.average(data_i, axis=0)
+        avg_lum[i] = avg_lum_i
+        cv[i] = sd_i / avg_lum_i
         rms[i] = np.sqrt(np.mean(np.square(data_i), axis=0))
-    return cv, sd, rms
+    return cv, sd, rms, avg_lum
 
 
 def peak_find(data, p_tmp, avg=1, f_range=9, time=False, r2_cut=0):
@@ -210,6 +213,7 @@ def phase_analysis(
     d_n = data.shape[1]
     time = np.arange(data.shape[0], dtype=np.float64) * dt_m / 60 + offset
     p_tmp = signal.argrelmax(data, order=p_range, axis=0)  # 周りより値が大きい点抽出
+    print(p_tmp)
     p_tmp_n = np.max(np.bincount(p_tmp[1]))
     ###############
     # peakや時間を出力する箱を作る.
