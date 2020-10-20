@@ -78,6 +78,7 @@ def r3_plot(
     Args:
         theta ([type]): 位相データの集合
         theta_all ([type]): 全体の位相の集合
+        blue([list]): indexのリスト．白抜きにする
         r (bool, optional): 個々の位相のr. Defaults to False.
         r_all (bool, optional): 全体で見たときのr. Defaults to False.
         pdf_save (bool, optional): 保存先. Defaults to False.
@@ -112,10 +113,10 @@ def r3_plot(
                 r_b[i, :],
                 color="w",
                 lw=0,
-                marker=".",
-                markersize=10,
-                mec="b",
-                mfc="b",
+                marker="o",
+                markersize=5,
+                mec="k",
+                mfc="w",
                 label=s,
             )  # 極座標グラフのプロット
         plt.polar(

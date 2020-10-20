@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy as sp
+import scipy.signal as signal
 
 np.set_printoptions(precision=5, floatmode="fixed", suppress=True)
 
@@ -84,7 +85,7 @@ def fft_peak(data, s=0, e=24 * 3, dt=60, pdf_plot=False):
     P1[1:-1] = 2 * P1[1:-1]  # 交流成分を二倍．rのampspecとほぼ同じ
     P1[0] = 0
     # https://jp.mathworks.com/help/matlab/ref/fft.html
-    fft_point = sp.signal.argrelmax(P1, order=1, axis=0)  # peakの場所
+    fft_point = signal.argrelmax(P1, order=1, axis=0)  # peakの場所
     fft_df = pd.DataFrame(index=[], columns=["sample", "amp", "f", "pha"])
     fft_df["sample"] = fft_point[1]
     fft_df["amp"] = P1[fft_point]

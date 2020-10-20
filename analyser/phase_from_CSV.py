@@ -26,7 +26,7 @@ def peak_find_fromCSV(
     peak_t, peak_v, data_phase, r2, peak_point, func, data_period = pa.phase_analysis(
         data, dT, p_range, avg, f_range, offset
     )
-    cv, sd, _ = pa.amp_analysis(data, h_range=24 * 3 * 60 // dT)
+    cv, sd, _, _ = pa.amp_analysis(data, h_range=24 * 3 * 60 // dT)
     if pdf_save != False:
         mf.multi_plot(
             x=time,

@@ -29,9 +29,7 @@ def make_fig(data, path):
     plt.close()
 
 
-def frond2fig(
-    data, all_data, path, avg, dT, ymax, offset=0, loc="upper left", color=False
-):
+def frond2fig(data, all_data, path, avg, dT, ymax, offset=0, loc=False, color=False):
     # dataの取り込み,タブ区切りなら拡張子をtsv．　delimiter='\t'でできる気がする試してない．
     data_v = np.array(data.values)
     if ymax > 10000:
@@ -99,7 +97,7 @@ def frond2fig(
     elif loc == "upper left":
         plt.text(int(time[-1] / 15), ymax - int(ymax / 6), data.columns[i])
     else:
-        pass
+        ax1.get_legend().remove()
         # レイアウト崩れを自動で直してもらう
     # plt.tight_layout()
     # 保存
@@ -166,7 +164,7 @@ def make_frond_phase_imgs(imgs, label_imgs, avg, dT=60, p_range=6, f_range=4, sa
             dT=dT,
             ymax=6000,
         )
-        sqrt_df.to_csv(save + "sum.csv")
+        sqrt_df.to_csv(save + "sqet.csv")
 
         theta_data = pd.DataFrame(d_theta, index=time, columns=frond_idx)
         theta_data.to_csv(save + "theta.csv")

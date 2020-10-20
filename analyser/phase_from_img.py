@@ -208,18 +208,18 @@ def peak_img_list(peak_img, per_ber=10, m=5, fold=24):
         n = n - n % fold
     peak = np.sum(peak_img == 255, axis=(1, 2))
     frond = np.sum(peak_img != 0, axis=(1, 2))
-    ber_len = xsize - 14  # berの長さ
+    ber_len = ysize - 14  # berの長さ
     ber = np.tile(np.arange(ber_len), (n, per_ber, 1))  # ber の下地
     idx = (ber.T <= peak.astype(np.float64) * ber_len / frond).T  # 塗りつぶす場所
     ber[idx] = 255
     ber[~idx] = 50
     if m == 0:
-        peak_img[:, -per_ber:, 7 : xsize - 7] = ber  # berをマージ
+        peak_img[:, -per_ber:, 7 : ysize - 7] = ber  # berをマージ
     else:
-        peak_img[:, -m - per_ber : -m, 7 : xsize - 7] = ber  # berをマージ
+        peak_img[:, -m - per_ber : -m, 7 : ysize - 7] = ber  # berをマージ
 
     # ピークと判定されたピクセル数のバーを出す．
-    peak_img = np.reshape(peak_img.transpose(1, 2, 0), (ysize, -1), "F")  # 画像を横に並べる．
+    peak_img = np.reshape(peak_img.transpose(1, 2, 0), (xsize, -1), "F")  # 画像を横に並べる．
     peak_img[:m] = 255
     if fold is not False:
         peak_img = np.vstack(np.hsplit(peak_img, int(n / fold)))
@@ -256,6 +256,8 @@ def img_analysis_pdf(
     for i in roops:
         tau_idx = np.array(np.where(~tau_nan[i]))
         distance = np.linalg.norm((tau_idx.T - distance_center), axis=1) * pic
+        print(np.size((distance)))
+        print(np.size((tau[i][~tau_nan[i]])))
         title = (
             str(time[i])
             + "(h) center[ "
@@ -270,8 +272,8 @@ def img_analysis_pdf(
             y=tau[i][~tau_nan[i]],
             min_x=0,
             max_x=None,
-            min_y=16,
-            max_y=32,
+            min_y=22,
+            max_y=28,
             max_hist_x=200,
             max_hist_y=200,
             bin_hist_x=200,
@@ -300,8 +302,8 @@ def img_analysis_pdf(
             save_file=save_folder,
             x=tau[i][~cv_tau_nan[i]],
             y=cv[i][~cv_tau_nan[i]],
-            min_x=16,
-            max_x=32,
+            min_x=22,
+            max_x=28,
             min_y=0,
             max_y=None,
             max_hist_x=200,
@@ -329,8 +331,8 @@ def img_analysis_pdf(
             save_file=save_folder,
             x=tau[i][~sd_tau_nan[i]],
             y=sd[i][~sd_tau_nan[i]],
-            min_x=16,
-            max_x=32,
+            min_x=22,
+            max_x=28,
             min_y=0,
             max_y=None,
             max_hist_x=200,
@@ -507,6 +509,7 @@ def img_pixel_theta(
         np.save(os.path.join(save, "cv.npy"), cv)
         np.save(os.path.join(save, "sd.npy"), sd)
         np.save(os.path.join(save, "rms.npy"), rms)
+        np.save(os.path.join(save, "move_avg.npy"), avg_lum)
 
         if pdf is not False:
             if pdf is True:
@@ -692,7 +695,7 @@ def img_circadian_analysis(
         make_color=[22, 28],
         pdf=True,
         xlsx=True,
-        r2_cut=0.5,
+        r2_cut=0,
         min_tau=16,
         max_tau=30,
         offset=offset,

@@ -98,16 +98,21 @@ def merge_imgs(imgs, imgs_merge):  # mergeする
     return imgs_out
 
 
-def make_color(phase, grey=-2, black=-1):
+def make_color(phase, grey=-2, black=-1, white=False):
     # phaseのデータをRGB配列に．
     # 画像の格納庫
     hsv = np.ones(np.concatenate((phase.shape, [3])), dtype=np.uint8) * 255
     hsv[::, ::, 0] = (phase * 180).astype(np.uint8)
-    hsv[np.isnan(phase), :] = [0, 0, 0]
+    if white is False:
+        hsv[np.isnan(phase), :] = [0, 0, 0]
+    else:
+        hsv[np.isnan(phase), :] = [180, 0, 255]
     if black is not False:
         hsv[phase == black, :] = [0, 0, 0]
     if grey is not False:
         hsv[phase == grey, :] = [165, 0, 69]  # グレーに
+    if white is not False:
+        hsv[phase == white, :] = [180, 255, 255]
     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[:, :, ::-1]  # HSV→BGR→RGB
     return rgb
 

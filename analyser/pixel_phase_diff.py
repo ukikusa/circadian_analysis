@@ -97,7 +97,7 @@ def phase_diff_all(
     if not os.path.exists(os.path.join(data_folder, "theta.npy")):
         return 0
     theta = np.load(os.path.join(data_folder, "theta.npy"))
-
+    theta = theta[:, 60:200, 20:160]
     phase = theta[point]
     if dbg is True:
         phase[~np.isnan(phase)] = np.random.rand(np.sum(~np.isnan(phase)))
