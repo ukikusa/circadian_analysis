@@ -1,6 +1,6 @@
 # circadian_analysis
 
-[京都大学小山研](http://cosmos.bot.kyoto-u.ac.jp/clock/)で開発されたリズム解析に関するプログラムです．  
+リズム解析に関するプログラム開発です．  
 FFT_nllsはanalysis/FFT_nlls.pyで行えますが，取り回しを良くする作業はまだしていません．  
 
 ピクセルごとに位相と振幅(cv)を求める解析ができます．
@@ -9,7 +9,9 @@ FFT_nllsはanalysis/FFT_nlls.pyで行えますが，取り回しを良くする�
 
 python3 (3.7.0にて動作確認)  
 library: `Pipfile` 参照  
-pipenv にて環境再構築可能．
+pipenv にて環境再構築可能．  
+~~記事を書くのめんどくさいので~~pipenvで検索して  
+僕はpipenv + pyenv で環境を作っています．
 
 ## set up
 
@@ -88,6 +90,7 @@ Directoryは`circadian_analyser`に移動して実行してください．
 
 #### その他
 
+- pathがわからない人は適当にググってください．3秒ででて3分で理解できます．
 - 細かいパラメタの説明は書いていませんが色々変えたいときは python3 の環境に入り，import やfrom から始まっている行を全てコピペした後，
 ```help(関数名)```
 と打てば，関数の説明が出ます．
