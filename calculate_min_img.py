@@ -22,13 +22,13 @@ result5: sample 2 Red-pass filtered image
 -m: １ループで撮影される画像数。例えば、フィルターなし、緑フィルター、赤フィルターで同時に２サンプル撮影するときは１２枚。
 --path, -p: 今回の実験のディレクトリのPATH。この下にanalysisファイルが生成され、minをとった画像が保存される。
 --data, -d: file_dir下にある
---loop, -l: １ループの時間を何分と想定しているか。デフォルトは3600秒。
+--loop, -l: １ループの時間を何秒と想定しているか。デフォルトは3600秒。
 
 実行コマンド例)
 > python calculate_min_img.py -m 12 --path "C:\\Users\\watanabe\\Documents\\oyamalab\\data\\20201026"
 """
 
-import os
+import os, sys
 import glob
 from PIL import Image, ImageMath
 import numpy as np
@@ -77,7 +77,13 @@ if not os.path.exists('analysis'):
     os.chdir("analysis")
     os.mkdir("min")
 else:
-    print("analysis folder already exist.")
+    print("\nAnalysis folder already exist.")
+    while True:
+        ans = input("Are you sure you want to continue? [Y/n]").lower()
+        if ans == 'n': sys.exit(1)
+        if ans == 'y' or ans == '': break
+        print("Please answer by \"y\" or \"n\"")
+
 os.chdir(os.path.join(file_dir, "analysis", "min"))
 dir_analysis = os.getcwd()
 
@@ -102,4 +108,4 @@ for j in range(int(N)):
         # 対応するフォルダに保存
         os.chdir(os.path.join(dir_analysis, "result" + str(i)))
         pil_img_f.save("result{}_{}.tif".format(i, str(j).zfill(4)))
-print("Finished!")
+print("\nFinished! All images were stored in {}".format(dir_analysis))
