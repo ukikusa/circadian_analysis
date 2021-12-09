@@ -20,8 +20,9 @@ library: check `Pipfile` for detail
     
   Python file (modules) used in this paper
   - `calculate_min_img.py`: Used for managing image files captured in dual-color monitoring
-  - `analyser.FFT_nlls`: Used for estimating period by Fast Fourier transform–nonlinear least squares (FFT-NLLS)
-  - `analyser.peak_analysis`: Used for estimating peak time by a local quadratic curve fitting  
+  - `data_norm` and `cos_fit` in `analyser.FFT_nlls`: Used for estimating period by Fast Fourier transform–nonlinear least squares (FFT-NLLS)
+  - `phase_analysis` in `analyser.peak_analysis`: Used for estimating peak time by a local quadratic curve fitting. Parameters were set as follow.  
+  `avg=1, dt=60, p_range=12, f_avg=1, f_range=9, offset=0, time=False, r2_cut=False, min_tau=16, max_tau=32`
 
   
 - An endogenous basis for synchronization manners of the circadian rhythm in proliferating Lemna minor plants  
