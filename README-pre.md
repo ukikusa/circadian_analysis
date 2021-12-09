@@ -105,3 +105,10 @@ ST等のcsv, tsv形式で保存された時系列データを解析する．
   - peak.csv : 二次関数fittingにより推定されたpeak list
   - phase.npy: peak listを使用し，位相を生成したもの
   - fft : fft_nlls法で求めた周期と位相
+
+Analyze timesiries of csv, tsv file.
+
+- Returns
+  - peak.csv : a list of peak time estimated by a local quadratic curve fitting
+  - phase.npy: phase of each time defined by the linear interpolation of peaks
+  - fft : Period and phase estimated by Fast Fourier transform–nonlinear least squares (FFT-NLLS)
