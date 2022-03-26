@@ -110,17 +110,17 @@ def make_color(phase, grey=-2, black=-1, white=False):
     if black is not False:
         hsv[phase == black, :] = [0, 0, 0]
     if grey is not False:
-        hsv[phase == grey, :] = [165, 0, 69]  # グレーに
+        hsv[phase == grey, :] = [165, 0, 178]  # グレーに
     if white is not False:
-        hsv[phase == white, :] = [180, 255, 255]
+        hsv[phase == white, :] = [0, 0, 255]
     rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)[:, :, ::-1]  # HSV→BGR→RGB
     return rgb
 
 
-def make_colors(img, grey=-2, black=-1):
+def make_colors(img, grey=-2, black=-1, white=False):
     color = np.empty((np.concatenate((img.shape, [3]))), dtype=np.uint8)
     for i in range(img.shape[0]):
-        color[i] = make_color(img[i], grey=grey, black=black)
+        color[i] = make_color(img[i], grey=grey, black=black, white=white)
     return color
 
 
